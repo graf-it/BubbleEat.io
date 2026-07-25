@@ -57,8 +57,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 .hint{font-size:11px;color:var(--dim);margin-top:16px;line-height:1.5;}
 
 /* ---------- HUD ---------- */
-#hud{position:fixed;inset:0;pointer-events:none;z-index:10;
-  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
 #massBox{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));
   background:rgba(10,10,18,.6);border:1px solid var(--border);
   border-radius:14px;padding:10px 16px;backdrop-filter:blur(6px);}
@@ -71,20 +70,31 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 #leaderboard ol{list-style:none;margin:0;padding:0;font-size:12px;}
 #leaderboard li{display:flex;justify-content:space-between;padding:2px 0;color:var(--dim);}
 #leaderboard li.me{color:var(--cyan);font-weight:600;}
-#minimapWrap{position:absolute;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));
-  width:110px;height:110px;border-radius:12px;
+#minimapWrap{position:absolute;left:calc(16px + env(safe-area-inset-left));bottom:calc(16px + env(safe-area-inset-bottom));
+  width:104px;height:104px;border-radius:50%;
   overflow:hidden;border:1px solid var(--border);background:rgba(10,10,18,.6);}
 #toast{position:absolute;top:calc(80px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:13px;color:var(--gold);
-  opacity:0;transition:opacity .3s;font-weight:600;}
+  opacity:0;transition:opacity .3s;font-weight:600;text-align:center;white-space:nowrap;}
 #joyBase{position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(255,255,255,.15);
   background:rgba(255,255,255,.03);display:none;}
 #joyStick{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.18);
   top:28px;left:28px;}
-#mobileActions{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(140px + env(safe-area-inset-bottom));
-  display:flex;flex-direction:column;gap:12px;pointer-events:auto;}
-.actBtn{width:58px;height:58px;border-radius:50%;border:1px solid var(--border);
-  background:rgba(10,10,18,.65);color:var(--text);font-size:11px;font-weight:600;display:flex;
-  align-items:center;justify-content:center;text-align:center;}
+
+#actionCluster{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:auto;}
+.slotRow{display:flex;gap:10px;}
+.slotBtn{position:relative;width:50px;height:50px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#1c1c2e,#0a0a14 70%);
+  border:1.5px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.45), inset 0 1px 1px rgba(255,255,255,.08);}
+.slotBtn svg{width:22px;height:22px;}
+.slotBtn.big{width:62px;height:62px;}
+.slotBtn.big svg{width:26px;height:26px;}
+.slotBtn .badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;
+  background:var(--magenta);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron';box-shadow:0 0 0 2px var(--void);}
+.slotBtn.empty{opacity:.32;}
+.slotBtn:active{transform:scale(.92);}
 
 /* ---------- death screen ---------- */
 #deathScreen{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;
@@ -129,7 +139,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
       <div class="modeBtn" data-mode="trial">ТАЙМ-ТРИАЛ</div>
     </div>
     <button id="playBtn">В ПУСТОТУ</button>
-    <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы</div>
+    <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1/2/3 — щит / рывок / магнит из инвентаря</div>
   </div>
 </div>
 
@@ -139,9 +149,30 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   <div id="minimapWrap"><canvas id="minimap" width="110" height="110"></canvas></div>
   <div id="toast"></div>
   <div id="joyBase"><div id="joyStick"></div></div>
-  <div id="mobileActions">
-    <div class="actBtn" id="splitBtn">СПЛИТ</div>
-    <div class="actBtn" id="ejectBtn">ВЫБРОС</div>
+
+  <div id="actionCluster">
+    <div class="slotRow">
+      <div class="slotBtn empty" id="shieldBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2de2e6" stroke-width="2" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.4 8.6-8 11-4.6-2.4-8-6-8-11V5l8-3z"/></svg>
+        <div class="badge" id="shieldBadge">0</div>
+      </div>
+      <div class="slotBtn empty" id="surgeBtn">
+        <svg viewBox="0 0 24 24" fill="#ff3ea5"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+        <div class="badge" id="surgeBadge">0</div>
+      </div>
+      <div class="slotBtn empty" id="magnetBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffc145" stroke-width="2" stroke-linecap="round"><path d="M6 3v9a6 6 0 0 0 12 0V3"/><path d="M6 3H3v4h3"/><path d="M18 3h3v4h-3"/></svg>
+        <div class="badge" id="magnetBadge">0</div>
+      </div>
+    </div>
+    <div class="slotRow">
+      <div class="slotBtn big" id="splitBtn">
+        <svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="5.5" fill="#2de2e6"/><circle cx="16" cy="12" r="5.5" fill="#ff3ea5" opacity=".85"/></svg>
+      </div>
+      <div class="slotBtn big" id="ejectBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#eef0fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16V7M8 11l4-4 4 4"/></svg>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -175,12 +206,18 @@ const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUn
 
 /* ============ constants ============ */
 const WORLD = 4200;
+const WORLD_CX = WORLD/2, WORLD_CY = WORLD/2, WORLD_R = WORLD/2;
 const FOOD_COUNT = 220;
 const BOT_COUNT = 11;
 const POWERUP_MAX = 8;
 const EAT_RATIO = 1.15;
 const MIN_SPLIT_MASS = 44;
 const MAX_CELLS = 4;
+const MERGE_COOLDOWN = 30000;
+const BLACKHOLE_START = 7;
+const BLACKHOLE_MAX = 22;
+const SHATTER_MIN_MASS = 30;
+const INVENTORY_CAP = 5;
 const SKINS = [
   {name:'ПЛАЗМА', c1:'#2de2e6', c2:'#0f5e8c'},
   {name:'ПЛАМЯ',  c1:'#ff8a3d', c2:'#c22a2a'},
@@ -197,6 +234,12 @@ function speedForRadius(r){ return Math.max(46, 210 * Math.pow(30/r, 0.45)); }
 function rand(a,b){ return a + Math.random()*(b-a); }
 function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2,y1-y2); }
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function randomPointInWorld(margin){
+  const R = Math.max(10, WORLD_R - margin);
+  const ang = Math.random()*Math.PI*2;
+  const rad = Math.sqrt(Math.random())*R;
+  return {x:WORLD_CX+Math.cos(ang)*rad, y:WORLD_CY+Math.sin(ang)*rad};
+}
 
 /* ============ canvas setup ============ */
 const canvas = document.getElementById('game');
@@ -208,6 +251,7 @@ function resize(){
   canvas.style.width = innerWidth+'px'; canvas.style.height = innerHeight+'px';
 }
 window.addEventListener('resize', resize); resize();
+if(window.visualViewport){ window.visualViewport.addEventListener('resize', resize); }
 
 const mini = document.getElementById('minimap').getContext('2d');
 
@@ -217,12 +261,13 @@ let mode = 'bots';
 let skinIdx = 0;
 let playerName = tgUser && tgUser.first_name ? tgUser.first_name : 'Странник';
 
-let entities = [];   // {id,name,color1,color2,isBot,cells:[],alive,shieldUntil,surgeUntil,magnetUntil,aim:{x,y},bestMass,ai:{}}
+let entities = [];
 let food = [];
 let powerups = [];
-let ejected = [];    // ejected mass pellets: {x,y,vx,vy,r,mass,owner,eatableAt}
+let blackholes = [];
+let ejected = [];    // {x,y,vx,vy,r,mass,color,owner,eatableAt}
 let particles = [];
-let cam = {x:WORLD/2, y:WORLD/2, zoom:1};
+let cam = {x:WORLD_CX, y:WORLD_CY, zoom:1};
 let player = null;
 let lastTime = 0;
 let sessionBest = 0;
@@ -239,8 +284,8 @@ function spawnFood(){
   for(let i=0;i<FOOD_COUNT;i++) food.push(makeFood());
 }
 function makeFood(){
-  return {x:rand(40,WORLD-40), y:rand(40,WORLD-40), r:rand(4,7),
-    color: SKINS[Math.floor(rand(0,SKINS.length))].c1};
+  const p = randomPointInWorld(40);
+  return {x:p.x, y:p.y, r:rand(4,7), color: SKINS[Math.floor(rand(0,SKINS.length))].c1};
 }
 function spawnPowerups(){
   powerups = [];
@@ -248,18 +293,39 @@ function spawnPowerups(){
 }
 function makePowerup(){
   const t = POWERUP_TYPES[Math.floor(rand(0,POWERUP_TYPES.length))];
-  return {x:rand(80,WORLD-80), y:rand(80,WORLD-80), r:13, type:t, phase:Math.random()*Math.PI*2};
+  const p = randomPointInWorld(80);
+  return {x:p.x, y:p.y, r:13, type:t, phase:Math.random()*Math.PI*2};
+}
+function spawnBlackholes(){
+  blackholes = [];
+  for(let i=0;i<BLACKHOLE_START;i++){
+    const p = randomPointInWorld(220);
+    blackholes.push({x:p.x, y:p.y, r:rand(34,50), phase:Math.random()*Math.PI*2});
+  }
+}
+function spawnBlackholeNear(bh){
+  if(blackholes.length >= BLACKHOLE_MAX) return;
+  for(let tries=0; tries<6; tries++){
+    const ang = Math.random()*Math.PI*2, d = rand(140,260);
+    const nx = bh.x+Math.cos(ang)*d, ny = bh.y+Math.sin(ang)*d;
+    if(Math.hypot(nx-WORLD_CX, ny-WORLD_CY) < WORLD_R-100){
+      blackholes.push({x:nx, y:ny, r:rand(30,46), phase:Math.random()*Math.PI*2});
+      return;
+    }
+  }
 }
 
 function makeEntity(name, isBot, skin){
   const s = skin || SKINS[Math.floor(rand(0,SKINS.length))];
+  const p = randomPointInWorld(300);
   return {
     id: Math.random().toString(36).slice(2),
     name, isBot, color1:s.c1, color2:s.c2, alive:true, bestMass:20,
     shieldUntil:0, surgeUntil:0, magnetUntil:0,
-    aim:{x:1,y:0},
-    cells:[{ x:rand(300,WORLD-300), y:rand(300,WORLD-300), vx:0, vy:0, mass:20, mergeAt:0 }],
-    ai:{ mode:'wander', target:{x:WORLD/2,y:WORLD/2}, nextThink:0 },
+    aim:{x:1,y:0}, desiredAim:{x:1,y:0},
+    inventory:{shield:0, surge:0, magnet:0},
+    cells:[{ x:p.x, y:p.y, vx:0, vy:0, mass:20, mergeAt:0, faceAngle:0, hazardGraceUntil:0 }],
+    ai:{ mode:'wander', target:{x:WORLD_CX,y:WORLD_CY}, nextThink:0 },
   };
 }
 
@@ -272,7 +338,7 @@ function centroid(e){
 
 /* ============ start / reset ============ */
 function resetGame(){
-  spawnFood(); spawnPowerups(); ejected=[]; particles=[];
+  spawnFood(); spawnPowerups(); spawnBlackholes(); ejected=[]; particles=[];
   entities = [];
   player = makeEntity(playerName || 'Странник', false, SKINS[skinIdx]);
   entities.push(player);
@@ -282,6 +348,7 @@ function resetGame(){
   const c = centroid(player);
   cam.x=c.x; cam.y=c.y; cam.zoom=2.2;
   sessionBest = 20;
+  updateInventoryUI();
 }
 
 /* ============ input ============ */
@@ -312,7 +379,7 @@ canvas.addEventListener('touchmove', e=>{
       if(d>max){ dx=dx/d*max; dy=dy/d*max; }
       joyStick.style.left=(28+dx)+'px'; joyStick.style.top=(28+dy)+'px';
       const len = Math.hypot(dx,dy)||1;
-      touchAim = {x:dx/len, y:dy/len, mag: Math.min(1,len/max)};
+      touchAim = {x:dx/len, y:dy/len};
     }
   }
 }, {passive:true});
@@ -328,9 +395,39 @@ window.addEventListener('keydown', e=>{
   if(state!=='playing') return;
   if(e.code==='Space'){ e.preventDefault(); doSplit(player); }
   if(e.code==='KeyE'){ doEject(player); }
+  if(e.code==='Digit1'){ useInventoryItem('shield'); }
+  if(e.code==='Digit2'){ useInventoryItem('surge'); }
+  if(e.code==='Digit3'){ useInventoryItem('magnet'); }
 });
-document.getElementById('splitBtn').addEventListener('touchstart', e=>{ e.preventDefault(); doSplit(player); });
-document.getElementById('ejectBtn').addEventListener('touchstart', e=>{ e.preventDefault(); doEject(player); });
+function bindTap(el, fn){
+  el.addEventListener('click', fn);
+  el.addEventListener('touchstart', e=>{ e.preventDefault(); fn(); }, {passive:false});
+}
+bindTap(document.getElementById('splitBtn'), ()=>doSplit(player));
+bindTap(document.getElementById('ejectBtn'), ()=>doEject(player));
+bindTap(document.getElementById('shieldBtn'), ()=>useInventoryItem('shield'));
+bindTap(document.getElementById('surgeBtn'), ()=>useInventoryItem('surge'));
+bindTap(document.getElementById('magnetBtn'), ()=>useInventoryItem('magnet'));
+
+/* ============ inventory ============ */
+function updateInventoryUI(){
+  if(!player) return;
+  ['shield','surge','magnet'].forEach(t=>{
+    const n = player.inventory[t]||0;
+    document.getElementById(t+'Badge').textContent = n;
+    document.getElementById(t+'Btn').classList.toggle('empty', n<=0);
+  });
+}
+function useInventoryItem(type){
+  if(!player || !player.alive) return;
+  if(!player.inventory[type]) return;
+  player.inventory[type]--;
+  applyPowerup(player, type, performance.now());
+  updateInventoryUI();
+  const labelMap = {shield:'ЩИТ', surge:'РЫВОК', magnet:'МАГНИТ'};
+  showToast(labelMap[type]+' АКТИВИРОВАН');
+  if(tg && tg.HapticFeedback){ try{ tg.HapticFeedback.impactOccurred('medium'); }catch(e){} }
+}
 
 /* ============ mechanics ============ */
 function doSplit(e){
@@ -343,8 +440,9 @@ function doSplit(e){
       c.mass = half;
       const ang = Math.atan2(e.aim.y, e.aim.x);
       const boost = 340;
-      newCells.push({x:c.x, y:c.y, vx:Math.cos(ang)*boost, vy:Math.sin(ang)*boost, mass:half, mergeAt: now+12000});
-      c.mergeAt = now+12000;
+      newCells.push({x:c.x, y:c.y, vx:Math.cos(ang)*boost, vy:Math.sin(ang)*boost, mass:half,
+        mergeAt: now+MERGE_COOLDOWN, faceAngle:ang, hazardGraceUntil:0});
+      c.mergeAt = now+MERGE_COOLDOWN;
     }
   }
   e.cells.push(...newCells);
@@ -359,7 +457,7 @@ function doEject(e){
   ejected.push({
     x: biggest.x+Math.cos(ang)*r, y: biggest.y+Math.sin(ang)*r,
     vx: Math.cos(ang)*520, vy: Math.sin(ang)*520, r:7, mass:12,
-    color:e.color1, eatableAt: performance.now()+380
+    color:e.color1, owner:e, eatableAt: performance.now()+380
   });
 }
 
@@ -367,7 +465,6 @@ function doEject(e){
 function thinkBot(e, now){
   if(now < e.ai.nextThink) return;
   e.ai.nextThink = now + rand(280,480);
-  const myR = massToRadius(totalMass(e));
   const c = centroid(e);
   let threat=null, threatD=Infinity, prey=null, preyD=Infinity;
   for(const other of entities){
@@ -378,9 +475,17 @@ function thinkBot(e, now){
       if(cell.mass*EAT_RATIO < totalMass(e) && d<460 && d<preyD){ prey=cell; preyD=d; }
     }
   }
+  let avoidHole=null, holeD=Infinity;
+  for(const bh of blackholes){
+    const d = dist(c.x,c.y,bh.x,bh.y);
+    if(d < bh.r+160 && d<holeD){ avoidHole=bh; holeD=d; }
+  }
   if(threat){
     e.ai.mode='flee';
     e.ai.target = {x: c.x-(threat.x-c.x), y: c.y-(threat.y-c.y)};
+  } else if(avoidHole){
+    e.ai.mode='avoid';
+    e.ai.target = {x: c.x-(avoidHole.x-c.x), y: c.y-(avoidHole.y-c.y)};
   } else if(prey){
     e.ai.mode='hunt';
     e.ai.target = {x:prey.x, y:prey.y};
@@ -389,44 +494,66 @@ function thinkBot(e, now){
       let nearestFood=null, nd=Infinity;
       for(const f of food){ const d=dist(c.x,c.y,f.x,f.y); if(d<nd){nd=d; nearestFood=f;} }
       e.ai.mode='wander';
-      e.ai.target = nearestFood ? {x:nearestFood.x,y:nearestFood.y} : {x:rand(200,WORLD-200), y:rand(200,WORLD-200)};
+      e.ai.target = nearestFood ? {x:nearestFood.x,y:nearestFood.y} : randomPointInWorld(200);
     }
   }
   const dx = e.ai.target.x-c.x, dy = e.ai.target.y-c.y, len=Math.hypot(dx,dy)||1;
-  e.aim = {x:dx/len, y:dy/len};
+  e.desiredAim = {x:dx/len, y:dy/len};
 }
 
 /* ============ physics / collisions ============ */
 function updateEntity(e, dt, now){
+  const aimSmooth = 1 - Math.exp(-dt*8);
+  e.aim.x += (e.desiredAim.x-e.aim.x)*aimSmooth;
+  e.aim.y += (e.desiredAim.y-e.aim.y)*aimSmooth;
+  const alen = Math.hypot(e.aim.x,e.aim.y)||1;
+  e.aim.x/=alen; e.aim.y/=alen;
+
   for(const cell of e.cells){
     const r = massToRadius(cell.mass);
     let speed = speedForRadius(r);
     if(now < e.surgeUntil) speed *= 1.55;
     const targetVx = e.aim.x*speed, targetVy = e.aim.y*speed;
-    cell.vx += (targetVx-cell.vx)*Math.min(1, dt*6);
-    cell.vy += (targetVy-cell.vy)*Math.min(1, dt*6);
+    const vSmooth = 1 - Math.exp(-dt*4.2);
+    cell.vx += (targetVx-cell.vx)*vSmooth;
+    cell.vy += (targetVy-cell.vy)*vSmooth;
     cell.x += cell.vx*dt; cell.y += cell.vy*dt;
-    cell.x = clamp(cell.x, r, WORLD-r); cell.y = clamp(cell.y, r, WORLD-r);
+
+    const dx0=cell.x-WORLD_CX, dy0=cell.y-WORLD_CY;
+    const dd = Math.hypot(dx0,dy0);
+    const maxR = WORLD_R - r;
+    if(dd > maxR && dd>0){
+      const k = maxR/dd;
+      cell.x = WORLD_CX+dx0*k; cell.y = WORLD_CY+dy0*k;
+      cell.vx *= 0.35; cell.vy *= 0.35;
+    }
+    const spd = Math.hypot(cell.vx,cell.vy);
+    if(spd > 10) cell.faceAngle = Math.atan2(cell.vy,cell.vx);
   }
-  // same-owner separation + merge
+
+  // same-owner: merge after cooldown, otherwise gentle separation
   for(let i=0;i<e.cells.length;i++){
     for(let j=i+1;j<e.cells.length;j++){
       const a=e.cells[i], b=e.cells[j];
       const ra=massToRadius(a.mass), rb=massToRadius(b.mass);
       const d = dist(a.x,a.y,b.x,b.y)||0.01;
       const canMerge = now>a.mergeAt && now>b.mergeAt;
-      if(canMerge && d < Math.max(ra,rb)*0.6){
-        a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
-        e.cells.splice(j,1); j--; continue;
-      }
-      if(d < ra+rb){
+      if(canMerge){
+        if(d < Math.max(ra,rb)*0.7){
+          a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
+          e.cells.splice(j,1); j--; continue;
+        }
+        const nx=(b.x-a.x)/d, ny=(b.y-a.y)/d, pull=8;
+        a.x += nx*pull; a.y += ny*pull;
+        b.x -= nx*pull; b.y -= ny*pull;
+      } else if(d < ra+rb){
         const overlap = (ra+rb-d)/d*0.5;
         const ox=(a.x-b.x)*overlap, oy=(a.y-b.y)*overlap;
         a.x+=ox; a.y+=oy; b.x-=ox; b.y-=oy;
       }
     }
   }
-  // magnet effect
+
   if(now < e.magnetUntil){
     const c = centroid(e);
     for(const f of food){
@@ -434,6 +561,30 @@ function updateEntity(e, dt, now){
       if(d < 260){ f.x += (c.x-f.x)*0.06; f.y += (c.y-f.y)*0.06; }
     }
   }
+}
+
+function shatterCell(owner, cell, bh, now){
+  const idx = owner.cells.indexOf(cell);
+  if(idx===-1) return;
+  const pushAngle = (cell.x===bh.x && cell.y===bh.y) ? Math.random()*Math.PI*2 : Math.atan2(cell.y-bh.y, cell.x-bh.x);
+  if(cell.mass < SHATTER_MIN_MASS || owner.cells.length >= MAX_CELLS){
+    cell.vx = Math.cos(pushAngle)*280; cell.vy = Math.sin(pushAngle)*280;
+    cell.mass = Math.max(14, cell.mass*0.88);
+    cell.hazardGraceUntil = now+800;
+    if(owner===player) showToast('ОТБРОШЕН ОТ ЧЁРНОЙ ДЫРЫ');
+    return;
+  }
+  const slots = Math.min(3, MAX_CELLS - owner.cells.length + 1);
+  const fragMass = cell.mass/slots;
+  owner.cells.splice(idx,1);
+  for(let k=0;k<slots;k++){
+    const ang = pushAngle + rand(-0.9,0.9);
+    owner.cells.push({
+      x:cell.x, y:cell.y, vx:Math.cos(ang)*320, vy:Math.sin(ang)*320,
+      mass:fragMass, mergeAt: now+MERGE_COOLDOWN, faceAngle:ang, hazardGraceUntil: now+800
+    });
+  }
+  if(owner===player) showToast('РАЗБИЛСЯ О ЧЁРНУЮ ДЫРУ');
 }
 
 function handleEating(now){
@@ -451,12 +602,25 @@ function handleEating(now){
       }
     }
   }
-  // ejected pellets
+
+  // ejected pellets: black holes reproduce if fed, otherwise normal eating
   for(let i=ejected.length-1;i>=0;i--){
     const p = ejected[i];
     p.x+=p.vx*(1/60); p.y+=p.vy*(1/60);
     p.vx*=0.92; p.vy*=0.92;
-    p.x=clamp(p.x,0,WORLD); p.y=clamp(p.y,0,WORLD);
+
+    let consumedByHole=false;
+    for(const bh of blackholes){
+      if(dist(p.x,p.y,bh.x,bh.y) < bh.r){
+        consumedByHole=true;
+        spawnBlackholeNear(bh);
+        spawnParticles(bh.x,bh.y,'#c56bff',14);
+        if(p.owner===player) showToast('ЧЁРНАЯ ДЫРА РАЗМНОЖИЛАСЬ');
+        break;
+      }
+    }
+    if(consumedByHole){ ejected.splice(i,1); continue; }
+
     if(now < p.eatableAt) continue;
     let eaten=false;
     for(const e of entities){
@@ -469,7 +633,8 @@ function handleEating(now){
     }
     if(eaten) ejected.splice(i,1);
   }
-  // powerups
+
+  // powerups -> player inventory, bots auto-use
   for(const e of entities){
     if(!e.alive) continue;
     for(const cell of e.cells){
@@ -477,14 +642,37 @@ function handleEating(now){
       for(let i=powerups.length-1;i>=0;i--){
         const pu = powerups[i];
         if(dist(cell.x,cell.y,pu.x,pu.y) < r+pu.r){
-          applyPowerup(e, pu.type.id, now);
-          if(e===player) showToast(pu.type.label+' АКТИВИРОВАН');
+          if(e===player){
+            player.inventory[pu.type.id] = Math.min(INVENTORY_CAP, (player.inventory[pu.type.id]||0)+1);
+            showToast('+1 '+pu.type.label);
+            updateInventoryUI();
+          } else {
+            applyPowerup(e, pu.type.id, now);
+          }
           powerups.splice(i,1);
           if(powerups.length < POWERUP_MAX) powerups.push(makePowerup());
         }
       }
     }
   }
+
+  // black holes: shatter big cells that ram in
+  const shatterQueue = [];
+  for(const e of entities){
+    if(!e.alive) continue;
+    for(const cell of e.cells){
+      if(now < (cell.hazardGraceUntil||0)) continue;
+      const r = massToRadius(cell.mass);
+      for(const bh of blackholes){
+        if(dist(cell.x,cell.y,bh.x,bh.y) < bh.r + r*0.55){
+          shatterQueue.push({owner:e, cell, bh});
+          break;
+        }
+      }
+    }
+  }
+  for(const s of shatterQueue) shatterCell(s.owner, s.cell, s.bh, now);
+
   // entity vs entity
   for(const a of entities){
     if(!a.alive) continue;
@@ -537,7 +725,6 @@ function showToast(msg){
 }
 
 /* ============ death / respawn ============ */
-let lastEatenBy = '';
 function onPlayerDeath(){
   document.getElementById('deathStats').innerHTML =
     'Достигнутая масса: <b>'+Math.round(sessionBest)+'</b><br>Ты был частью пустоты и вернулся в неё.';
@@ -552,6 +739,7 @@ document.getElementById('respawnBtn').addEventListener('click', ()=>{
   entities.push(player);
   const c = centroid(player); cam.x=c.x; cam.y=c.y; cam.zoom=2.2;
   sessionBest = 20;
+  updateInventoryUI();
   state='playing';
 });
 document.getElementById('menuBtn').addEventListener('click', ()=>{
@@ -563,7 +751,7 @@ document.getElementById('menuBtn').addEventListener('click', ()=>{
 
 /* ============ camera ============ */
 function updateCamera(dt){
-  if(!player || !player.alive || player.cells.length===0) return; // avoid divide-by-zero -> NaN camera
+  if(!player || !player.alive || player.cells.length===0) return;
   const c = centroid(player);
   const tm = totalMass(player);
   const targetZoom = clamp(2.4 / Math.pow(tm/20, 0.32), 0.42, 2.4);
@@ -593,24 +781,59 @@ function drawCell(cell, e, now){
     ctx.textAlign='center'; ctx.fillText(e.name, p.x, p.y+4);
   }
 }
+function drawFacingArrow(p, r, angle){
+  const tipX = p.x+Math.cos(angle)*(r+13), tipY = p.y+Math.sin(angle)*(r+13);
+  const baseX = p.x+Math.cos(angle)*(r-3), baseY = p.y+Math.sin(angle)*(r-3);
+  const perp = angle+Math.PI/2, w=7;
+  ctx.beginPath();
+  ctx.moveTo(tipX,tipY);
+  ctx.lineTo(baseX+Math.cos(perp)*w, baseY+Math.sin(perp)*w);
+  ctx.lineTo(baseX-Math.cos(perp)*w, baseY-Math.sin(perp)*w);
+  ctx.closePath();
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.fill();
+}
 function render(now){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,innerWidth,innerHeight);
   ctx.fillStyle='#05050a'; ctx.fillRect(0,0,innerWidth,innerHeight);
 
-  // grid
+  // polar radar grid, screen-space, always centered on the player
   ctx.save();
-  const gridSize=120*cam.zoom;
-  const offX = (-cam.x*cam.zoom)%gridSize, offY=(-cam.y*cam.zoom)%gridSize;
-  ctx.strokeStyle='rgba(255,255,255,.035)'; ctx.lineWidth=1;
-  for(let x=offX; x<innerWidth; x+=gridSize){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,innerHeight); ctx.stroke(); }
-  for(let y=offY; y<innerHeight; y+=gridSize){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(innerWidth,y); ctx.stroke(); }
+  const ringGap=90, maxRpx=Math.hypot(innerWidth,innerHeight)/2+ringGap;
+  ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1;
+  for(let rr=ringGap; rr<maxRpx; rr+=ringGap){
+    ctx.beginPath(); ctx.arc(innerWidth/2, innerHeight/2, rr, 0, Math.PI*2); ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(255,255,255,.045)';
+  for(let a=0;a<Math.PI*2-0.01;a+=Math.PI/6){
+    ctx.beginPath();
+    ctx.moveTo(innerWidth/2, innerHeight/2);
+    ctx.lineTo(innerWidth/2+Math.cos(a)*maxRpx, innerHeight/2+Math.sin(a)*maxRpx);
+    ctx.stroke();
+  }
   ctx.restore();
 
-  // world bounds
-  const tl = worldToScreen(0,0), br = worldToScreen(WORLD,WORLD);
-  ctx.strokeStyle='rgba(255,62,165,.25)'; ctx.lineWidth=3;
-  ctx.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+  // world edge (circle)
+  const wc = worldToScreen(WORLD_CX,WORLD_CY);
+  ctx.beginPath(); ctx.arc(wc.x,wc.y,WORLD_R*cam.zoom,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,62,165,.28)'; ctx.lineWidth=3; ctx.stroke();
+
+  // black holes
+  for(const bh of blackholes){
+    const p = worldToScreen(bh.x,bh.y);
+    const r = bh.r*cam.zoom;
+    if(p.x<-r-40||p.x>innerWidth+r+40||p.y<-r-40||p.y>innerHeight+r+40) continue;
+    const grad = ctx.createRadialGradient(p.x,p.y,r*0.15,p.x,p.y,r*1.35);
+    grad.addColorStop(0,'#000000'); grad.addColorStop(0.55,'#0a0016'); grad.addColorStop(1,'rgba(120,40,200,0)');
+    ctx.beginPath(); ctx.arc(p.x,p.y,r*1.35,0,Math.PI*2); ctx.fillStyle=grad; ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fillStyle='#000'; ctx.fill();
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(now/1400+bh.phase);
+    ctx.beginPath(); ctx.setLineDash([r*0.5,r*0.35]);
+    ctx.arc(0,0,r*1.12,0,Math.PI*1.5);
+    ctx.strokeStyle='rgba(197,107,255,.55)'; ctx.lineWidth=3; ctx.stroke();
+    ctx.setLineDash([]); ctx.restore();
+  }
 
   // food
   for(const f of food){
@@ -647,8 +870,13 @@ function render(now){
   allCells.sort((a,b)=>a.c.mass-b.c.mass);
   for(const {c,e} of allCells) drawCell(c,e,now);
 
-  // player event-horizon ring signature
+  // player: direction arrows + event-horizon signature ring
   if(player && player.alive){
+    for(const c of player.cells){
+      const p = worldToScreen(c.x,c.y);
+      const r = massToRadius(c.mass)*cam.zoom;
+      drawFacingArrow(p, r, c.faceAngle||0);
+    }
     const c = centroid(player);
     const p = worldToScreen(c.x,c.y);
     const r = massToRadius(totalMass(player))*cam.zoom;
@@ -661,8 +889,12 @@ function render(now){
 
   // minimap
   mini.clearRect(0,0,110,110);
-  mini.fillStyle='rgba(255,255,255,.03)'; mini.fillRect(0,0,110,110);
+  mini.beginPath(); mini.arc(55,55,54,0,Math.PI*2); mini.fillStyle='rgba(255,255,255,.03)'; mini.fill();
   const s = 106/WORLD;
+  for(const bh of blackholes){
+    mini.beginPath(); mini.arc(2+bh.x*s, 2+bh.y*s, 1.5, 0, Math.PI*2);
+    mini.fillStyle='rgba(197,107,255,.7)'; mini.fill();
+  }
   for(const e of entities){
     if(!e.alive) continue;
     const c = centroid(e);
@@ -706,14 +938,13 @@ function loop(ts){
     const dt = lastTime ? Math.min((ts-lastTime)/1000, 0.05) : 0.016;
     lastTime = ts;
 
-    // player aim
     if(!player) return;
     if(touchAim){
-      player.aim = {x:touchAim.x, y:touchAim.y};
+      player.desiredAim = {x:touchAim.x, y:touchAim.y};
     } else {
       const dx = mouse.x-innerWidth/2, dy = mouse.y-innerHeight/2;
       const len = Math.hypot(dx,dy)||1;
-      player.aim = {x:dx/len, y:dy/len};
+      player.desiredAim = {x:dx/len, y:dy/len};
     }
 
     for(const e of entities){
@@ -756,7 +987,6 @@ document.querySelectorAll('.modeBtn').forEach(btn=>{
 document.getElementById('playBtn').addEventListener('click', ()=>{
   try{
     if(tg && tg.HapticFeedback){ try{ tg.HapticFeedback.impactOccurred('light'); }catch(e){} }
-    // best-effort real fullscreen (hides browser chrome on Android Chrome; no-op where unsupported, e.g. iOS Safari)
     const de = document.documentElement;
     if(de.requestFullscreen) de.requestFullscreen().catch(()=>{});
     else if(de.webkitRequestFullscreen) de.webkitRequestFullscreen();
@@ -769,11 +999,6 @@ document.getElementById('playBtn').addEventListener('click', ()=>{
     showError('Запуск игры: '+err.message);
   }
 });
-
-// keep canvas matched to the real visible viewport as mobile browser chrome shows/hides
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', resize);
-}
 </script>
 </body>
 </html>
