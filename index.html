@@ -218,9 +218,9 @@ const WORLD_CX = WORLD/2, WORLD_CY = WORLD/2, WORLD_R = WORLD/2;
 const FOOD_COUNT = 220;
 const BOT_COUNT = 11;
 const POWERUP_MAX = 8;
-const EAT_RATIO = 1.15;
-const MIN_SPLIT_MASS = 44;
-const MAX_CELLS = 4;
+const EAT_RATIO = 1.25;
+const MIN_SPLIT_MASS = 36;
+const MAX_CELLS = 16;
 const MERGE_COOLDOWN = 30000;
 const BLACKHOLE_START = 7;
 const BLACKHOLE_MAX = 22;
@@ -237,7 +237,7 @@ const SKINS = [
 ];
 const BOT_NAMES = ['Керн','Нексус','Затмение','Пульсар','Квазар','Тень','Астер','Вихрь','Оникс','Фобос','Немезида','Горгона','Спектр','Дрейф','Морок','Апекс'];
 
-function massToRadius(m){ return 18 + Math.sqrt(m)*2.6; }
+function massToRadius(m){ return 9 + Math.sqrt(m)*2.15; }
 function speedForRadius(r){ return Math.max(46, 210 * Math.pow(30/r, 0.45)); }
 function rand(a,b){ return a + Math.random()*(b-a); }
 function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2,y1-y2); }
@@ -311,16 +311,29 @@ function spawnBlackholes(){
     blackholes.push({x:p.x, y:p.y, r:rand(34,50), phase:Math.random()*Math.PI*2});
   }
 }
-function spawnBlackholeNear(bh){
-  if(blackholes.length >= BLACKHOLE_MAX) return;
-  for(let tries=0; tries<6; tries++){
-    const ang = Math.random()*Math.PI*2, d = rand(140,260);
-    const nx = bh.x+Math.cos(ang)*d, ny = bh.y+Math.sin(ang)*d;
-    if(Math.hypot(nx-WORLD_CX, ny-WORLD_CY) < WORLD_R-100){
-      blackholes.push({x:nx, y:ny, r:rand(30,46), phase:Math.random()*Math.PI*2});
-      return;
+function spawnBlackholeDirected(bh, angle, now){
+  if(blackholes.length >= BLACKHOLE_MAX) return null;
+  const d = rand(150,260);
+  let nx = bh.x+Math.cos(angle)*d, ny = bh.y+Math.sin(angle)*d;
+  const distFromCenter = Math.hypot(nx-WORLD_CX, ny-WORLD_CY);
+  if(distFromCenter > WORLD_R-100){
+    const k = (WORLD_R-100)/distFromCenter;
+    nx = WORLD_CX+(nx-WORLD_CX)*k; ny = WORLD_CY+(ny-WORLD_CY)*k;
+  }
+  const nh = {x:nx, y:ny, r:rand(30,46), phase:Math.random()*Math.PI*2};
+  blackholes.push(nh);
+  // anyone standing where the new hole erupts gets caught in it immediately
+  const hitNames = [];
+  for(const e of entities){
+    if(!e.alive) continue;
+    for(const cell of [...e.cells]){
+      if(dist(cell.x,cell.y,nh.x,nh.y) < nh.r + massToRadius(cell.mass)*0.55){
+        shatterCell(e, cell, nh, now);
+        if(!hitNames.includes(e.name)) hitNames.push(e.name);
+      }
     }
   }
+  return {hole:nh, hitNames};
 }
 
 function makeEntity(name, isBot, skin){
@@ -359,7 +372,7 @@ function resetGame(){
     setTimeout(()=>{ if(state==='playing') logEvent('<b>'+bot.name+'</b> <span style="color:var(--cyan)">подключился</span>'); }, 300+i*220);
   });
   const c = centroid(player);
-  cam.x=c.x; cam.y=c.y; cam.zoom=2.2;
+  cam.x=c.x; cam.y=c.y; cam.zoom=1.35;
   sessionBest = 20;
   updateInventoryUI();
 }
@@ -439,6 +452,7 @@ function useInventoryItem(type){
   updateInventoryUI();
   const labelMap = {shield:'ЩИТ', surge:'РЫВОК', magnet:'МАГНИТ'};
   showToast(labelMap[type]+' АКТИВИРОВАН');
+  logEvent('<b>'+player.name+'</b> применил буст <span style="color:var(--gold)">'+labelMap[type]+'</span>');
   if(tg && tg.HapticFeedback){ try{ tg.HapticFeedback.impactOccurred('medium'); }catch(e){} }
 }
 
@@ -452,7 +466,7 @@ function doSplit(e){
       const half = c.mass/2;
       c.mass = half;
       const ang = Math.atan2(e.aim.y, e.aim.x);
-      const boost = 340;
+      const boost = 620;
       newCells.push({x:c.x, y:c.y, vx:Math.cos(ang)*boost, vy:Math.sin(ang)*boost, mass:half,
         mergeAt: now+MERGE_COOLDOWN, faceAngle:ang, hazardGraceUntil:0});
       c.mergeAt = now+MERGE_COOLDOWN;
@@ -527,6 +541,15 @@ function updateEntity(e, dt, now){
     let speed = speedForRadius(r);
     if(now < e.surgeUntil) speed *= 1.55;
     const targetVx = e.aim.x*speed, targetVy = e.aim.y*speed;
+
+    // ballistic "launch" phase: while moving faster than normal (fresh split/eject),
+    // bleed the extra momentum off with friction instead of snapping straight to
+    // the steering target — this is what gives splitting its "shoot" feel.
+    const curSpeed = Math.hypot(cell.vx,cell.vy);
+    if(curSpeed > speed*1.2){
+      const friction = Math.pow(0.06, dt);
+      cell.vx *= friction; cell.vy *= friction;
+    }
     const vSmooth = 1 - Math.exp(-dt*4.2);
     cell.vx += (targetVx-cell.vx)*vSmooth;
     cell.vy += (targetVy-cell.vy)*vSmooth;
@@ -626,9 +649,17 @@ function handleEating(now){
     for(const bh of blackholes){
       if(dist(p.x,p.y,bh.x,bh.y) < bh.r){
         consumedByHole=true;
-        spawnBlackholeNear(bh);
+        const throwAngle = (p.vx||p.vy) ? Math.atan2(p.vy,p.vx) : Math.random()*Math.PI*2;
+        const result = spawnBlackholeDirected(bh, throwAngle, now);
         spawnParticles(bh.x,bh.y,'#c56bff',14);
-        if(p.owner===player) showToast('ЧЁРНАЯ ДЫРА РАЗМНОЖИЛАСЬ');
+        if(p.owner===player){
+          if(result && result.hitNames.length){
+            showToast('ДЫРА РАЗБИЛА '+result.hitNames.join(', ').toUpperCase());
+            logEvent('<b>'+player.name+'</b> <span style="color:var(--gold)">направил чёрную дыру</span> на <b>'+result.hitNames.join(', ')+'</b>');
+          } else {
+            showToast('ЧЁРНАЯ ДЫРА РАЗМНОЖИЛАСЬ');
+          }
+        }
         break;
       }
     }
@@ -703,6 +734,9 @@ function handleEating(now){
             if(b===player) spawnParticles(bcell.x,bcell.y,b.color1,10);
             b.cells.splice(k,1);
             if(a===player) showToast('+'+Math.round(bcell.mass)+' МАССЫ');
+            if(b.cells.length===0){
+              logEvent('<b>'+a.name+'</b> <span style="color:var(--magenta)">поглотил</span> <b>'+b.name+'</b>');
+            }
           }
         }
       }
@@ -720,6 +754,10 @@ function applyPowerup(e, id, now){
   if(id==='shield') e.shieldUntil = now+4000;
   if(id==='surge') e.surgeUntil = now+4000;
   if(id==='magnet') e.magnetUntil = now+5000;
+  if(e.isBot){
+    const labelMap = {shield:'ЩИТ', surge:'РЫВОК', magnet:'МАГНИТ'};
+    logEvent('<b>'+e.name+'</b> применил буст <span style="color:var(--gold)">'+labelMap[id]+'</span>');
+  }
 }
 
 /* ============ particles / toast ============ */
@@ -763,7 +801,7 @@ document.getElementById('respawnBtn').addEventListener('click', ()=>{
   if(idx>=0) entities.splice(idx,1);
   player = makeEntity(playerName, false, SKINS[skinIdx]);
   entities.push(player);
-  const c = centroid(player); cam.x=c.x; cam.y=c.y; cam.zoom=2.2;
+  const c = centroid(player); cam.x=c.x; cam.y=c.y; cam.zoom=1.35;
   sessionBest = 20;
   updateInventoryUI();
   logEvent('<b>'+player.name+'</b> <span style="color:var(--cyan)">вернулся в пустоту</span>');
@@ -781,10 +819,12 @@ function updateCamera(dt){
   if(!player || !player.alive || player.cells.length===0) return;
   const c = centroid(player);
   const tm = totalMass(player);
-  const targetZoom = clamp(2.4 / Math.pow(tm/20, 0.32), 0.42, 2.4);
+  const massZoom = 1.35 / Math.pow(tm/20, 0.24);
+  const splitFactor = 1 - Math.min(0.35, (player.cells.length-1)*0.045); // splitting into more pieces widens the view too
+  const targetZoom = clamp(massZoom*splitFactor, 0.22, 1.5);
   cam.x += (c.x-cam.x)*Math.min(1,dt*4);
   cam.y += (c.y-cam.y)*Math.min(1,dt*4);
-  cam.zoom += (targetZoom-cam.zoom)*Math.min(1,dt*3);
+  cam.zoom += (targetZoom-cam.zoom)*Math.min(1,dt*3.2);
 }
 
 /* ============ render ============ */
