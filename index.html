@@ -2,21 +2,29 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05050a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>GORGE — Feed the Void</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js" defer></script>
 <style>
 :root{
   --void:#05050a; --panel:#0c0c17; --panel2:#11111f; --border:rgba(255,255,255,.08);
   --cyan:#2de2e6; --magenta:#ff3ea5; --gold:#ffc145; --text:#eef0fa; --dim:#8b8fa8;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--void);
-  font-family:'Space Grotesk',sans-serif;color:var(--text);touch-action:none;overscroll-behavior:none;}
+html,body{margin:0;width:100%;height:100vh;height:100dvh;overflow:hidden;background:var(--void);
+  font-family:'Space Grotesk',sans-serif;color:var(--text);touch-action:none;overscroll-behavior:none;
+  position:fixed;inset:0;}
 #game{position:fixed;inset:0;display:block;background:var(--void);}
 .hidden{display:none !important;}
+#errBanner{position:fixed;left:8px;right:8px;bottom:8px;z-index:999;background:#3a0d16;color:#ffb4c0;
+  border:1px solid #6b1a2c;border-radius:10px;padding:10px 12px;font-size:11px;line-height:1.5;
+  font-family:monospace;white-space:pre-wrap;display:none;max-height:40vh;overflow:auto;}
 h1,h2,.num{font-family:'Orbitron',sans-serif;}
 
 /* ---------- start screen ---------- */
@@ -49,26 +57,31 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 .hint{font-size:11px;color:var(--dim);margin-top:16px;line-height:1.5;}
 
 /* ---------- HUD ---------- */
-#hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
-#massBox{position:absolute;top:16px;left:16px;background:rgba(10,10,18,.6);border:1px solid var(--border);
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+#massBox{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));
+  background:rgba(10,10,18,.6);border:1px solid var(--border);
   border-radius:14px;padding:10px 16px;backdrop-filter:blur(6px);}
 #massBox .label{font-size:10px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;}
 #massBox .val{font-size:24px;font-weight:700;}
-#leaderboard{position:absolute;top:16px;right:16px;width:170px;background:rgba(10,10,18,.6);
+#leaderboard{position:absolute;top:calc(16px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));
+  width:170px;background:rgba(10,10,18,.6);
   border:1px solid var(--border);border-radius:14px;padding:10px 12px;backdrop-filter:blur(6px);}
 #leaderboard .title{font-size:10px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
 #leaderboard ol{list-style:none;margin:0;padding:0;font-size:12px;}
 #leaderboard li{display:flex;justify-content:space-between;padding:2px 0;color:var(--dim);}
 #leaderboard li.me{color:var(--cyan);font-weight:600;}
-#minimapWrap{position:absolute;right:16px;bottom:16px;width:110px;height:110px;border-radius:12px;
+#minimapWrap{position:absolute;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));
+  width:110px;height:110px;border-radius:12px;
   overflow:hidden;border:1px solid var(--border);background:rgba(10,10,18,.6);}
-#toast{position:absolute;top:80px;left:50%;transform:translateX(-50%);font-size:13px;color:var(--gold);
+#toast{position:absolute;top:calc(80px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:13px;color:var(--gold);
   opacity:0;transition:opacity .3s;font-weight:600;}
 #joyBase{position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(255,255,255,.15);
   background:rgba(255,255,255,.03);display:none;}
 #joyStick{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.18);
   top:28px;left:28px;}
-#mobileActions{position:absolute;right:18px;bottom:140px;display:flex;flex-direction:column;gap:12px;pointer-events:auto;}
+#mobileActions{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(140px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:12px;pointer-events:auto;}
 .actBtn{width:58px;height:58px;border-radius:50%;border:1px solid var(--border);
   background:rgba(10,10,18,.65);color:var(--text);font-size:11px;font-weight:600;display:flex;
   align-items:center;justify-content:center;text-align:center;}
@@ -94,6 +107,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 <body>
 
 <canvas id="game"></canvas>
+<div id="errBanner"></div>
 
 <div id="startScreen">
   <div class="orb" style="width:260px;height:260px;background:var(--cyan);top:8%;left:5%;"></div>
@@ -144,6 +158,15 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 
 <script>
 'use strict';
+
+/* ============ visible error reporting (never fail silently) ============ */
+function showError(msg){
+  const el = document.getElementById('errBanner');
+  el.style.display = 'block';
+  el.textContent = '⚠ ' + msg;
+}
+window.addEventListener('error', e=>{ showError((e.message||'Ошибка')+' ('+(e.filename||'')+':'+(e.lineno||'')+')'); });
+window.addEventListener('unhandledrejection', e=>{ showError('Promise error: '+ (e.reason && e.reason.message || e.reason)); });
 
 /* ============ Telegram Mini App bootstrap (safe no-op outside Telegram) ============ */
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
@@ -482,7 +505,6 @@ function handleEating(now){
           }
         }
       }
-      if(b_deadCheck(b_last)); // no-op placeholder removed below
     }
   }
   for(const e of entities){
@@ -492,8 +514,6 @@ function handleEating(now){
     }
   }
 }
-// (helper stub not used - keep physics loop clean)
-function b_deadCheck(){ return false; }
 
 function applyPowerup(e, id, now){
   if(id==='shield') e.shieldUntil = now+4000;
@@ -543,6 +563,7 @@ document.getElementById('menuBtn').addEventListener('click', ()=>{
 
 /* ============ camera ============ */
 function updateCamera(dt){
+  if(!player || !player.alive || player.cells.length===0) return; // avoid divide-by-zero -> NaN camera
   const c = centroid(player);
   const tm = totalMass(player);
   const targetZoom = clamp(2.4 / Math.pow(tm/20, 0.32), 0.42, 2.4);
@@ -680,28 +701,33 @@ function updateHud(now, dt){
 function loop(ts){
   requestAnimationFrame(loop);
   if(state!=='playing') return;
-  const now = performance.now();
-  const dt = lastTime ? Math.min((ts-lastTime)/1000, 0.05) : 0.016;
-  lastTime = ts;
+  try{
+    const now = performance.now();
+    const dt = lastTime ? Math.min((ts-lastTime)/1000, 0.05) : 0.016;
+    lastTime = ts;
 
-  // player aim
-  if(touchAim){
-    player.aim = {x:touchAim.x, y:touchAim.y};
-  } else {
-    const dx = mouse.x-innerWidth/2, dy = mouse.y-innerHeight/2;
-    const len = Math.hypot(dx,dy)||1;
-    player.aim = {x:dx/len, y:dy/len};
-  }
+    // player aim
+    if(!player) return;
+    if(touchAim){
+      player.aim = {x:touchAim.x, y:touchAim.y};
+    } else {
+      const dx = mouse.x-innerWidth/2, dy = mouse.y-innerHeight/2;
+      const len = Math.hypot(dx,dy)||1;
+      player.aim = {x:dx/len, y:dy/len};
+    }
 
-  for(const e of entities){
-    if(!e.alive) continue;
-    if(e.isBot) thinkBot(e, now);
-    updateEntity(e, dt, now);
+    for(const e of entities){
+      if(!e.alive) continue;
+      if(e.isBot) thinkBot(e, now);
+      updateEntity(e, dt, now);
+    }
+    handleEating(now);
+    updateCamera(dt);
+    updateHud(now, dt);
+    render(now);
+  } catch(err){
+    showError('Игровой цикл: '+err.message);
   }
-  handleEating(now);
-  updateCamera(dt);
-  updateHud(now, dt);
-  render(now);
 }
 requestAnimationFrame(loop);
 
@@ -728,12 +754,26 @@ document.querySelectorAll('.modeBtn').forEach(btn=>{
 });
 
 document.getElementById('playBtn').addEventListener('click', ()=>{
-  if(tg && tg.HapticFeedback) try{ tg.HapticFeedback.impactOccurred('light'); }catch(e){}
-  document.getElementById('startScreen').classList.add('hidden');
-  document.getElementById('hud').classList.remove('hidden');
-  resetGame();
-  state='playing';
+  try{
+    if(tg && tg.HapticFeedback){ try{ tg.HapticFeedback.impactOccurred('light'); }catch(e){} }
+    // best-effort real fullscreen (hides browser chrome on Android Chrome; no-op where unsupported, e.g. iOS Safari)
+    const de = document.documentElement;
+    if(de.requestFullscreen) de.requestFullscreen().catch(()=>{});
+    else if(de.webkitRequestFullscreen) de.webkitRequestFullscreen();
+    resize();
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    resetGame();
+    state='playing';
+  } catch(err){
+    showError('Запуск игры: '+err.message);
+  }
 });
+
+// keep canvas matched to the real visible viewport as mobile browser chrome shows/hides
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', resize);
+}
 </script>
 </body>
 </html>
