@@ -82,6 +82,13 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 
 #actionCluster{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));
   display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:auto;}
+#eventLog{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  display:flex;flex-direction:column-reverse;gap:5px;align-items:center;max-width:78vw;}
+.logLine{background:rgba(10,10,18,.55);border:1px solid var(--border);border-radius:8px;padding:4px 11px;
+  font-size:11px;color:var(--dim);opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78vw;}
+.logLine.show{opacity:1;transform:translateY(0);}
+.logLine b{color:var(--text);font-weight:600;}
 .slotRow{display:flex;gap:10px;}
 .slotBtn{position:relative;width:50px;height:50px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#1c1c2e,#0a0a14 70%);
@@ -148,6 +155,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   <div id="leaderboard"><div class="title">Лидеры</div><ol id="lbList"></ol></div>
   <div id="minimapWrap"><canvas id="minimap" width="110" height="110"></canvas></div>
   <div id="toast"></div>
+  <div id="eventLog"></div>
   <div id="joyBase"><div id="joyStick"></div></div>
 
   <div id="actionCluster">
@@ -345,6 +353,11 @@ function resetGame(){
   for(let i=0;i<BOT_COUNT;i++){
     entities.push(makeEntity(BOT_NAMES[i%BOT_NAMES.length]+(i>=BOT_NAMES.length?' '+i:''), true));
   }
+  document.getElementById('eventLog').innerHTML = '';
+  logEvent('<b>'+player.name+'</b> <span style="color:var(--cyan)">вошёл в пустоту</span>');
+  entities.slice(1).forEach((bot,i)=>{
+    setTimeout(()=>{ if(state==='playing') logEvent('<b>'+bot.name+'</b> <span style="color:var(--cyan)">подключился</span>'); }, 300+i*220);
+  });
   const c = centroid(player);
   cam.x=c.x; cam.y=c.y; cam.zoom=2.2;
   sessionBest = 20;
@@ -723,6 +736,19 @@ function showToast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>{ el.style.opacity=0; }, 1100);
 }
+function logEvent(html){
+  const wrap = document.getElementById('eventLog');
+  const el = document.createElement('div');
+  el.className='logLine';
+  el.innerHTML = html;
+  wrap.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  while(wrap.children.length>5){ wrap.removeChild(wrap.firstChild); }
+  setTimeout(()=>{
+    el.classList.remove('show');
+    setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); }, 350);
+  }, 4200);
+}
 
 /* ============ death / respawn ============ */
 function onPlayerDeath(){
@@ -740,6 +766,7 @@ document.getElementById('respawnBtn').addEventListener('click', ()=>{
   const c = centroid(player); cam.x=c.x; cam.y=c.y; cam.zoom=2.2;
   sessionBest = 20;
   updateInventoryUI();
+  logEvent('<b>'+player.name+'</b> <span style="color:var(--cyan)">вернулся в пустоту</span>');
   state='playing';
 });
 document.getElementById('menuBtn').addEventListener('click', ()=>{
@@ -798,24 +825,28 @@ function render(now){
   ctx.clearRect(0,0,innerWidth,innerHeight);
   ctx.fillStyle='#05050a'; ctx.fillRect(0,0,innerWidth,innerHeight);
 
-  // polar radar grid, screen-space, always centered on the player
+  // world edge (circle) — computed first so the grid can share its center
+  const wc = worldToScreen(WORLD_CX,WORLD_CY);
+
+  // polar radar grid, anchored to the MAP (static) — not to the player/camera
   ctx.save();
-  const ringGap=90, maxRpx=Math.hypot(innerWidth,innerHeight)/2+ringGap;
+  const ringGapWorld = 350;
   ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1;
-  for(let rr=ringGap; rr<maxRpx; rr+=ringGap){
-    ctx.beginPath(); ctx.arc(innerWidth/2, innerHeight/2, rr, 0, Math.PI*2); ctx.stroke();
+  for(let rr=ringGapWorld; rr<=WORLD_R; rr+=ringGapWorld){
+    const rpx = rr*cam.zoom;
+    ctx.beginPath(); ctx.arc(wc.x, wc.y, rpx, 0, Math.PI*2); ctx.stroke();
   }
   ctx.strokeStyle='rgba(255,255,255,.045)';
   for(let a=0;a<Math.PI*2-0.01;a+=Math.PI/6){
+    const edge = worldToScreen(WORLD_CX+Math.cos(a)*WORLD_R, WORLD_CY+Math.sin(a)*WORLD_R);
     ctx.beginPath();
-    ctx.moveTo(innerWidth/2, innerHeight/2);
-    ctx.lineTo(innerWidth/2+Math.cos(a)*maxRpx, innerHeight/2+Math.sin(a)*maxRpx);
+    ctx.moveTo(wc.x, wc.y);
+    ctx.lineTo(edge.x, edge.y);
     ctx.stroke();
   }
   ctx.restore();
 
-  // world edge (circle)
-  const wc = worldToScreen(WORLD_CX,WORLD_CY);
+  // world edge stroke
   ctx.beginPath(); ctx.arc(wc.x,wc.y,WORLD_R*cam.zoom,0,Math.PI*2);
   ctx.strokeStyle='rgba(255,62,165,.28)'; ctx.lineWidth=3; ctx.stroke();
 
