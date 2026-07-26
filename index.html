@@ -54,6 +54,10 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   background:linear-gradient(90deg,var(--cyan),var(--magenta));box-shadow:0 8px 24px rgba(45,226,230,.25);}
 #playBtn:active{transform:scale(.98);}
 .modeRow{display:flex;gap:8px;margin-bottom:18px;}
+.sizeRow{margin-bottom:18px;text-align:left;}
+.sizeLabel{font-size:11px;color:var(--dim);letter-spacing:.5px;margin-bottom:6px;display:flex;justify-content:space-between;}
+.sizeLabel span{color:var(--cyan);font-weight:700;}
+#sizeSlider{width:100%;accent-color:var(--cyan);}
 .modeBtn{flex:1;padding:9px 4px;border-radius:12px;border:1px solid var(--border);background:#0e0e1a;
   color:var(--dim);font-size:11px;letter-spacing:.5px;cursor:pointer;}
 .modeBtn.active{color:var(--void);background:linear-gradient(90deg,var(--cyan),var(--magenta));font-weight:600;}
@@ -117,6 +121,9 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   font-family:'Orbitron';box-shadow:0 0 0 2px var(--void);}
 .slotBtn.empty{opacity:.32;}
 .slotBtn:active{transform:scale(.92);}
+.slotBtn.small{width:38px;height:38px;}
+.slotBtn.small svg{width:16px;height:16px;}
+.boostRow{gap:6px;}
 .slotBtn .cd{position:absolute;inset:0;border-radius:50%;display:none;align-items:center;justify-content:center;
   font-family:'Orbitron';font-weight:700;font-size:15px;color:#fff;background:rgba(0,0,0,.6);}
 .slotBtn.big .cd{font-size:18px;}
@@ -159,13 +166,17 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
       </div>
       <div class="skinArrow" id="skinNext">›</div>
     </div>
+    <div class="sizeRow">
+      <div class="sizeLabel">Стартовый размер <span id="sizeVal">20</span></div>
+      <input type="range" id="sizeSlider" min="14" max="60" value="20">
+    </div>
     <div class="modeRow">
       <div class="modeBtn active" data-mode="bots">АРЕНА С БОТАМИ</div>
       <div class="modeBtn" data-mode="trial">ТАЙМ-ТРИАЛ</div>
     </div>
     <button id="playBtn">В ПУСТОТУ</button>
     <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1-5 — щит / рывок / магнит / заморозка / шип из инвентаря</div>
-    <div class="verTag">BUBBLE EAT v2.0.0 · сборка 2026-07-26</div>
+    <div class="verTag">BUBBLE EAT v2.1.0 · сборка 2026-07-26</div>
   </div>
 </div>
 
@@ -256,7 +267,7 @@ const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUn
 /* ============ constants ============ */
 const WORLD = 4200;
 const WORLD_CX = WORLD/2, WORLD_CY = WORLD/2, WORLD_R = WORLD/2;
-const FOOD_COUNT = 220;
+const FOOD_COUNT = 420;
 const BOT_COUNT = 11;
 const POWERUP_MAX = 8;
 const EAT_RATIO = 1.25;
@@ -321,6 +332,7 @@ for(let i=0;i<160;i++){
 let state = 'menu'; // menu | playing | dead
 let mode = 'bots';
 let skinIdx = 0;
+let startMass = 20;
 let playerName = tgUser && tgUser.first_name ? tgUser.first_name : 'Странник';
 
 let entities = [];
@@ -394,17 +406,18 @@ function spawnBlackholeDirected(bh, angle, now){
   return {hole:nh, hitNames};
 }
 
-function makeEntity(name, isBot, skin){
+function makeEntity(name, isBot, skin, startMass){
   const s = skin || SKINS[Math.floor(rand(0,SKINS.length))];
   const p = randomPointInWorld(300);
+  const m0 = startMass || 20;
   return {
     id: Math.random().toString(36).slice(2),
-    name, isBot, color1:s.c1, color2:s.c2, pattern:s.pattern||'none', alive:true, bestMass:20,
+    name, isBot, color1:s.c1, color2:s.c2, pattern:s.pattern||'none', alive:true, bestMass:m0,
     shieldUntil:performance.now()+10000, surgeUntil:0, magnetUntil:0,
     aim:{x:1,y:0}, desiredAim:{x:1,y:0},
     inventory:{shield:0, surge:0, magnet:0, freeze:0, spike:0},
     splitCooldownUntil:0, ejectCooldownUntil:0,
-    cells:[{ x:p.x, y:p.y, vx:0, vy:0, mass:20, mergeAt:0, faceAngle:0, hazardGraceUntil:0 }],
+    cells:[{ x:p.x, y:p.y, vx:0, vy:0, mass:m0, mergeAt:0, faceAngle:0, hazardGraceUntil:0 }],
     ai:{ mode:'wander', target:{x:WORLD_CX,y:WORLD_CY}, nextThink:0 },
   };
 }
@@ -420,7 +433,7 @@ function centroid(e){
 function resetGame(){
   spawnFood(); spawnPowerups(); spawnBlackholes(); ejected=[]; particles=[];
   entities = [];
-  player = makeEntity(playerName || 'Странник', false, SKINS[skinIdx]);
+  player = makeEntity(playerName || 'Странник', false, SKINS[skinIdx], startMass);
   entities.push(player);
   for(let i=0;i<BOT_COUNT;i++){
     entities.push(makeEntity(BOT_NAMES[i%BOT_NAMES.length]+(i>=BOT_NAMES.length?' '+i:''), true));
@@ -432,7 +445,7 @@ function resetGame(){
   });
   const c = centroid(player);
   cam.x=c.x; cam.y=c.y; cam.zoom=1.35;
-  sessionBest = 20;
+  sessionBest = startMass;
   nextSpontaneousHoleAt = performance.now() + rand(12000,20000);
   updateInventoryUI();
 }
@@ -563,7 +576,7 @@ function doSplit(e){
       c.mass = half;
       const ang = Math.atan2(e.aim.y, e.aim.x);
       const rr = massToRadius(half);
-      const boost = clamp(2600 - rr*22, 500, 2400) * countDamp;
+      const boost = clamp(1500 - rr*13, 450, 1100) * countDamp;
       newCells.push({x:c.x, y:c.y, vx:0, vy:0, boostVx:Math.cos(ang)*boost, boostVy:Math.sin(ang)*boost, mass:half,
         mergeAt: now+MERGE_COOLDOWN, faceAngle:ang, hazardGraceUntil:0});
       c.mergeAt = now+MERGE_COOLDOWN;
@@ -672,7 +685,7 @@ function updateEntity(e, dt, now){
     // own (framerate-independent) while steering keeps working underneath it —
     // that combination is what makes a split feel like a smooth "shot" rather
     // than an instant snap.
-    const boostDecay = Math.exp(-dt*2.2);
+    const boostDecay = Math.exp(-dt*2.6);
     cell.boostVx = (cell.boostVx||0)*boostDecay;
     cell.boostVy = (cell.boostVy||0)*boostDecay;
 
@@ -1073,10 +1086,10 @@ document.getElementById('respawnBtn').addEventListener('click', ()=>{
   document.getElementById('deathScreen').classList.add('hidden');
   const idx = entities.indexOf(player);
   if(idx>=0) entities.splice(idx,1);
-  player = makeEntity(playerName, false, SKINS[skinIdx]);
+  player = makeEntity(playerName, false, SKINS[skinIdx], startMass);
   entities.push(player);
   const c = centroid(player); cam.x=c.x; cam.y=c.y; cam.zoom=1.35;
-  sessionBest = 20;
+  sessionBest = startMass;
   updateInventoryUI();
   logEvent('<b>'+player.name+'</b> <span style="color:var(--cyan)">вернулся в пустоту</span>');
   state='playing';
@@ -1247,11 +1260,7 @@ function render(now){
   // world edge (circle) — computed first so the grid/lava can share its center
   const wc = worldToScreen(WORLD_CX,WORLD_CY);
   const edgeRpx = WORLD_R*cam.zoom;
-  const cornerDist = Math.max(
-    Math.hypot(wc.x,wc.y), Math.hypot(innerWidth-wc.x,wc.y),
-    Math.hypot(wc.x,innerHeight-wc.y), Math.hypot(innerWidth-wc.x,innerHeight-wc.y)
-  );
-  if(cornerDist > edgeRpx){
+  {
     ctx.save();
     const lavaGrad = ctx.createRadialGradient(wc.x,wc.y,edgeRpx*0.82, wc.x,wc.y,edgeRpx*1.7);
     lavaGrad.addColorStop(0,'#3a0a02'); lavaGrad.addColorStop(0.4,'#7a1d02');
@@ -1277,12 +1286,15 @@ function render(now){
       g2.addColorStop(0,'rgba(255,180,40,.85)'); g2.addColorStop(1,'rgba(255,80,0,0)');
       ctx.beginPath(); ctx.arc(lx,ly,lr,0,Math.PI*2); ctx.fillStyle=g2; ctx.fill();
     }
-    // punch the interior back to void so lava only shows past the boundary
+    // punch the interior back out so lava only shows past the boundary
+    // (destination-out reveals whatever was already drawn there — void + stars)
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
     ctx.beginPath();
-    ctx.rect(0,0,innerWidth,innerHeight);
-    ctx.arc(wc.x,wc.y,edgeRpx,0,Math.PI*2,true);
-    ctx.fillStyle='#05050a';
-    ctx.fill('evenodd');
+    ctx.arc(wc.x,wc.y,edgeRpx,0,Math.PI*2);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+    ctx.restore();
     ctx.restore();
   }
 
@@ -1501,6 +1513,10 @@ function renderSkinPreview(){
 renderSkinPreview();
 document.getElementById('skinPrev').onclick = ()=>{ skinIdx=(skinIdx-1+SKINS.length)%SKINS.length; renderSkinPreview(); };
 document.getElementById('skinNext').onclick = ()=>{ skinIdx=(skinIdx+1)%SKINS.length; renderSkinPreview(); };
+document.getElementById('sizeSlider').addEventListener('input', e=>{
+  startMass = parseInt(e.target.value,10);
+  document.getElementById('sizeVal').textContent = startMass;
+});
 
 document.querySelectorAll('.modeBtn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
