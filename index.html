@@ -10,7 +10,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>GORGE — Feed the Void</title>
+<title>BUBBLE EAT — Feed the Void</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
@@ -37,7 +37,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 #panelCard{position:relative;width:min(420px,88vw);padding:34px 28px 28px;border-radius:22px;
   background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);
   box-shadow:0 20px 60px rgba(0,0,0,.5);text-align:center;}
-#panelCard h1{font-size:38px;font-weight:900;margin:0 0 4px;letter-spacing:2px;
+#panelCard h1{font-size:32px;font-weight:900;margin:0 0 4px;letter-spacing:1.5px;
   background:linear-gradient(90deg,var(--cyan),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;}
 .tagline{color:var(--dim);font-size:13px;letter-spacing:1px;margin-bottom:22px;text-transform:uppercase;}
 #nameInput{width:100%;padding:13px 16px;border-radius:999px;border:1px solid var(--border);
@@ -62,12 +62,12 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
-#massBox{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));
+#massBox{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(194px + env(safe-area-inset-left));
   background:rgba(10,10,18,.6);border:1px solid var(--border);
-  border-radius:14px;padding:10px 16px;backdrop-filter:blur(6px);}
-#massBox .label{font-size:10px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;}
-#massBox .val{font-size:24px;font-weight:700;}
-#leaderboard{position:absolute;top:calc(16px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));
+  border-radius:10px;padding:5px 9px;backdrop-filter:blur(6px);}
+#massBox .label{font-size:7px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;}
+#massBox .val{font-size:14px;font-weight:700;}
+#leaderboard{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));
   width:170px;background:rgba(10,10,18,.6);pointer-events:auto;
   border:1px solid var(--border);border-radius:14px;padding:10px 12px;backdrop-filter:blur(6px);}
 #leaderboard .lbHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;cursor:pointer;}
@@ -84,6 +84,12 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   overflow:hidden;border:1px solid var(--border);background:rgba(10,10,18,.6);}
 #toast{position:absolute;top:calc(80px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:13px;color:var(--gold);
   opacity:0;transition:opacity .3s;font-weight:600;text-align:center;white-space:nowrap;}
+#emojiBar{position:absolute;top:calc(16px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));
+  display:flex;gap:6px;pointer-events:auto;background:rgba(10,10,18,.6);border:1px solid var(--border);
+  border-radius:14px;padding:6px;backdrop-filter:blur(6px);}
+.emojiBtn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  border-radius:8px;cursor:pointer;}
+.emojiBtn:active{background:rgba(255,255,255,.12);transform:scale(.9);}
 #joyBase{position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(255,255,255,.15);
   background:rgba(255,255,255,.03);display:none;}
 #joyStick{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.18);
@@ -142,7 +148,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   <div class="orb" style="width:260px;height:260px;background:var(--cyan);top:8%;left:5%;"></div>
   <div class="orb" style="width:220px;height:220px;background:var(--magenta);bottom:10%;right:6%;animation-delay:3s;"></div>
   <div id="panelCard">
-    <h1>GORGE</h1>
+    <h1>BUBBLE EAT</h1>
     <div class="tagline">Feed the void · Become the maw</div>
     <input id="nameInput" maxlength="14" placeholder="Твоё имя">
     <div class="skinRow">
@@ -159,7 +165,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
     </div>
     <button id="playBtn">В ПУСТОТУ</button>
     <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1-5 — щит / рывок / магнит / заморозка / шип из инвентаря</div>
-    <div class="verTag">GORGE v1.6.0 · сборка 2026-07-26</div>
+    <div class="verTag">BUBBLE EAT v2.0.0 · сборка 2026-07-26</div>
   </div>
 </div>
 
@@ -171,31 +177,37 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
     <button id="lbExitBtn">Выйти из игры</button>
   </div>
   <div id="minimapWrap"><canvas id="minimap" width="110" height="110"></canvas></div>
+  <div id="emojiBar">
+    <div class="emojiBtn">😀</div>
+    <div class="emojiBtn">😂</div>
+    <div class="emojiBtn">😡</div>
+    <div class="emojiBtn">👍</div>
+    <div class="emojiBtn">🔥</div>
+    <div class="emojiBtn">💀</div>
+  </div>
   <div id="toast"></div>
   <div id="eventLog"></div>
   <div id="joyBase"><div id="joyStick"></div></div>
 
   <div id="actionCluster">
-    <div class="slotRow">
-      <div class="slotBtn empty" id="shieldBtn">
+    <div class="slotRow boostRow">
+      <div class="slotBtn empty small" id="shieldBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#2de2e6" stroke-width="2" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.4 8.6-8 11-4.6-2.4-8-6-8-11V5l8-3z"/></svg>
         <div class="badge" id="shieldBadge">0</div>
       </div>
-      <div class="slotBtn empty" id="surgeBtn">
+      <div class="slotBtn empty small" id="surgeBtn">
         <svg viewBox="0 0 24 24" fill="#ff3ea5"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
         <div class="badge" id="surgeBadge">0</div>
       </div>
-      <div class="slotBtn empty" id="magnetBtn">
+      <div class="slotBtn empty small" id="magnetBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#ffc145" stroke-width="2" stroke-linecap="round"><path d="M6 3v9a6 6 0 0 0 12 0V3"/><path d="M6 3H3v4h3"/><path d="M18 3h3v4h-3"/></svg>
         <div class="badge" id="magnetBadge">0</div>
       </div>
-    </div>
-    <div class="slotRow">
-      <div class="slotBtn empty" id="freezeBtn">
+      <div class="slotBtn empty small" id="freezeBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#8fd8ff" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
         <div class="badge" id="freezeBadge">0</div>
       </div>
-      <div class="slotBtn empty" id="spikeBtn">
+      <div class="slotBtn empty small" id="spikeBtn">
         <svg viewBox="0 0 24 24" fill="#ff5544"><path d="M12 2l2 6 6-2-4 5 4 5-6-2-2 6-2-6-6 2 4-5-4-5 6 2z"/></svg>
         <div class="badge" id="spikeBadge">0</div>
       </div>
@@ -388,7 +400,7 @@ function makeEntity(name, isBot, skin){
   return {
     id: Math.random().toString(36).slice(2),
     name, isBot, color1:s.c1, color2:s.c2, pattern:s.pattern||'none', alive:true, bestMass:20,
-    shieldUntil:0, surgeUntil:0, magnetUntil:0,
+    shieldUntil:performance.now()+10000, surgeUntil:0, magnetUntil:0,
     aim:{x:1,y:0}, desiredAim:{x:1,y:0},
     inventory:{shield:0, surge:0, magnet:0, freeze:0, spike:0},
     splitCooldownUntil:0, ejectCooldownUntil:0,
@@ -427,13 +439,16 @@ function resetGame(){
 
 /* ============ input ============ */
 let mouse = {x:innerWidth/2, y:innerHeight/2};
+let mouseActive = false;
+let usingTouch = false;
 let touchAim = null;
-window.addEventListener('mousemove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+window.addEventListener('mousemove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; mouseActive=true; });
 
 const joyBase = document.getElementById('joyBase');
 const joyStick = document.getElementById('joyStick');
 let joyTouchId = null;
 canvas.addEventListener('touchstart', e=>{
+  usingTouch = true;
   for(const t of e.changedTouches){
     if(t.clientX < innerWidth*0.62 && joyTouchId===null){
       joyTouchId = t.identifier;
@@ -452,8 +467,7 @@ canvas.addEventListener('touchmove', e=>{
       const d = Math.hypot(dx,dy), max=44;
       if(d>max){ dx=dx/d*max; dy=dy/d*max; }
       joyStick.style.left=(28+dx)+'px'; joyStick.style.top=(28+dy)+'px';
-      const len = Math.hypot(dx,dy)||1;
-      touchAim = {x:dx/len, y:dy/len};
+      touchAim = {x:dx/max, y:dy/max}; // magnitude proportional to stick deflection, not forced to 1
     }
   }
 }, {passive:true});
@@ -486,6 +500,12 @@ bindTap(document.getElementById('surgeBtn'), ()=>useInventoryItem('surge'));
 bindTap(document.getElementById('magnetBtn'), ()=>useInventoryItem('magnet'));
 bindTap(document.getElementById('freezeBtn'), ()=>useInventoryItem('freeze'));
 bindTap(document.getElementById('spikeBtn'), ()=>useInventoryItem('spike'));
+document.querySelectorAll('.emojiBtn').forEach(btn=>{
+  bindTap(btn, ()=>{
+    if(!player || !player.alive) return;
+    player.activeEmoji = {char: btn.textContent, until: performance.now()+2200};
+  });
+});
 
 /* ============ inventory ============ */
 const INVENTORY_TYPES = ['shield','surge','magnet','freeze','spike'];
@@ -498,9 +518,32 @@ function updateInventoryUI(){
     document.getElementById(t+'Btn').classList.toggle('empty', n<=0);
   });
 }
+function launchSlime(e, kind){
+  if(!e || !e.alive) return false;
+  const now = performance.now();
+  let biggest = e.cells.reduce((a,b)=> a.mass>b.mass?a:b);
+  if(biggest.mass < 24) return false;
+  biggest.mass -= 10;
+  const ang = Math.atan2(e.aim.y, e.aim.x);
+  const r = massToRadius(biggest.mass);
+  ejected.push({
+    x: biggest.x+Math.cos(ang)*r, y: biggest.y+Math.sin(ang)*r,
+    vx: Math.cos(ang)*900, vy: Math.sin(ang)*900, r:14, mass:0,
+    color: kind==='freeze' ? '#8fd8ff' : '#ff5544',
+    owner:e, kind, eatableAt: now+220, bornAt: now
+  });
+  return true;
+}
 function useInventoryItem(type){
   if(!player || !player.alive) return;
   if(!player.inventory[type]) return;
+  if(type==='freeze' || type==='spike'){
+    if(!launchSlime(player, type)){ showToast('НЕДОСТАТОЧНО МАССЫ'); return; }
+    player.inventory[type]--;
+    updateInventoryUI();
+    if(tg && tg.HapticFeedback){ try{ tg.HapticFeedback.impactOccurred('medium'); }catch(e){} }
+    return;
+  }
   player.inventory[type]--;
   applyPowerup(player, type, performance.now());
   updateInventoryUI();
@@ -513,12 +556,14 @@ function doSplit(e){
   const now = performance.now();
   if(now < (e.splitCooldownUntil||0)) return;
   const newCells = [];
+  const countDamp = Math.max(0.25, 1 - (e.cells.length/MAX_CELLS)*0.75);
   for(const c of e.cells){
     if(c.mass >= MIN_SPLIT_MASS && e.cells.length+newCells.length < MAX_CELLS){
       const half = c.mass/2;
       c.mass = half;
       const ang = Math.atan2(e.aim.y, e.aim.x);
-      const boost = 620;
+      const rr = massToRadius(half);
+      const boost = clamp(2600 - rr*22, 500, 2400) * countDamp;
       newCells.push({x:c.x, y:c.y, vx:0, vy:0, boostVx:Math.cos(ang)*boost, boostVy:Math.sin(ang)*boost, mass:half,
         mergeAt: now+MERGE_COOLDOWN, faceAngle:ang, hazardGraceUntil:0});
       c.mergeAt = now+MERGE_COOLDOWN;
@@ -604,8 +649,9 @@ function updateEntity(e, dt, now){
   const aimSmooth = 1 - Math.exp(-dt*8);
   e.aim.x += (e.desiredAim.x-e.aim.x)*aimSmooth;
   e.aim.y += (e.desiredAim.y-e.aim.y)*aimSmooth;
-  const alen = Math.hypot(e.aim.x,e.aim.y)||1;
-  e.aim.x/=alen; e.aim.y/=alen;
+  const alen = Math.hypot(e.aim.x,e.aim.y);
+  if(alen > 1){ e.aim.x/=alen; e.aim.y/=alen; } // clamp down only — never force a stopped ball back to full speed
+  const burnedCells = [];
 
   for(const cell of e.cells){
     const r = massToRadius(cell.mass);
@@ -626,7 +672,7 @@ function updateEntity(e, dt, now){
     // own (framerate-independent) while steering keeps working underneath it —
     // that combination is what makes a split feel like a smooth "shot" rather
     // than an instant snap.
-    const boostDecay = Math.exp(-dt*3.4);
+    const boostDecay = Math.exp(-dt*2.2);
     cell.boostVx = (cell.boostVx||0)*boostDecay;
     cell.boostVy = (cell.boostVy||0)*boostDecay;
 
@@ -638,9 +684,12 @@ function updateEntity(e, dt, now){
     const dd = Math.hypot(dx0,dy0);
     const safeR = WORLD_R - r;
     if(dd > safeR){
-      const depth = Math.min(1, (dd-safeR)/LAVA_DEPTH);
-      cell.mass = Math.max(12, cell.mass - (5+depth*14)*dt);
       cell.inLava = true;
+      if(now >= (e.frozenUntil||0)){
+        const depth = Math.min(1, (dd-safeR)/LAVA_DEPTH);
+        cell.mass -= (5+depth*14)*dt;
+        if(cell.mass <= 3) burnedCells.push(cell);
+      }
       const hardR = WORLD_R + LAVA_DEPTH - r*0.4;
       if(dd > hardR && dd>0){
         const k = hardR/dd;
@@ -652,6 +701,13 @@ function updateEntity(e, dt, now){
     }
     const spd = Math.hypot(cell.vx,cell.vy);
     if(spd > 10) cell.faceAngle = Math.atan2(cell.vy,cell.vx);
+  }
+  for(const bc of burnedCells){
+    const bidx = e.cells.indexOf(bc);
+    if(bidx!==-1) e.cells.splice(bidx,1);
+  }
+  if(burnedCells.length && e.cells.length===0 && e.alive){
+    logEvent('<b>'+e.name+'</b> <span style="color:#ff6a2a">сгорел в лаве</span>');
   }
 
   // same-owner: before the merge cooldown ends, cells hold a firm "touching but
@@ -752,6 +808,29 @@ function handleEating(now, dt){
     }
   }
 
+  // frozen cells can't be eaten (handled in the eating loop below) but they
+  // are NOT a wall — anyone bumping into them shoves them around, mutually
+  for(const frozen of entities){
+    if(!frozen.alive || now >= (frozen.frozenUntil||0)) continue;
+    for(const fcell of frozen.cells){
+      const fr = massToRadius(fcell.mass);
+      for(const other of entities){
+        if(other===frozen || !other.alive) continue;
+        for(const ocell of other.cells){
+          const or_ = massToRadius(ocell.mass);
+          const d = dist(fcell.x,fcell.y,ocell.x,ocell.y);
+          const minD = fr+or_;
+          if(d < minD && d>0){
+            const overlap = minD-d;
+            const nx=(ocell.x-fcell.x)/d, ny=(ocell.y-fcell.y)/d;
+            fcell.x -= nx*overlap*0.5; fcell.y -= ny*overlap*0.5;
+            ocell.x += nx*overlap*0.5; ocell.y += ny*overlap*0.5;
+          }
+        }
+      }
+    }
+  }
+
   // food
   for(const e of entities){
     if(!e.alive) continue;
@@ -773,6 +852,36 @@ function handleEating(now, dt){
     p.x+=p.vx*dt; p.y+=p.vy*dt;
     const pDecay = Math.exp(-dt*1.8);
     p.vx*=pDecay; p.vy*=pDecay;
+
+    if(p.kind==='freeze' || p.kind==='spike'){
+      let hit=false;
+      if(now >= p.eatableAt){
+        for(const e of entities){
+          if(e===p.owner || !e.alive) continue;
+          for(const cell of e.cells){
+            const r = massToRadius(cell.mass);
+            if(dist(cell.x,cell.y,p.x,p.y) < r+p.r*0.5){
+              if(p.kind==='freeze'){
+                e.frozenUntil = now+2500;
+                if(p.owner===player) showToast('ЗАМОРОЗИЛ '+e.name.toUpperCase());
+                logEvent('<b>'+p.owner.name+'</b> <span style="color:#8fd8ff">заморозил</span> <b>'+e.name+'</b>');
+              } else if(e.cells.length < MAX_CELLS){
+                shatterCell(e, cell, {x:cell.x,y:cell.y}, now);
+                if(p.owner===player) showToast('ШИП ПОРАЗИЛ '+e.name.toUpperCase());
+                logEvent('<b>'+p.owner.name+'</b> <span style="color:#ff5544">поразил шипом</span> <b>'+e.name+'</b>');
+              }
+              hit=true; break;
+            }
+          }
+          if(hit) break;
+        }
+      }
+      const distFromCenter = dist(p.x,p.y,WORLD_CX,WORLD_CY);
+      if(hit || distFromCenter > WORLD_R+LAVA_DEPTH || now-p.bornAt>4000){
+        ejected.splice(i,1);
+      }
+      continue;
+    }
 
     let consumedByHole=false;
     for(const bh of blackholes){
@@ -820,7 +929,11 @@ function handleEating(now, dt){
             showToast('+1 '+pu.type.label);
             updateInventoryUI();
           } else {
-            applyPowerup(e, pu.type.id, now);
+            if(pu.type.id==='freeze' || pu.type.id==='spike'){
+              launchSlime(e, pu.type.id);
+            } else {
+              applyPowerup(e, pu.type.id, now);
+            }
           }
           powerups.splice(i,1);
           if(powerups.length < POWERUP_MAX) powerups.push(makePowerup());
@@ -855,7 +968,7 @@ function handleEating(now, dt){
         if(b===a || !b.alive) continue;
         for(let k=b.cells.length-1;k>=0;k--){
           const bcell = b.cells[k];
-          if(now < b.shieldUntil) continue;
+          if(now < b.shieldUntil || now < (b.frozenUntil||0)) continue;
           const br = massToRadius(bcell.mass);
           const d = dist(acell.x,acell.y,bcell.x,bcell.y);
           if(acell.mass > bcell.mass*EAT_RATIO && d < ar - br*0.6){
@@ -912,22 +1025,6 @@ function applyPowerup(e, id, now){
   } else if(id==='magnet'){
     e.magnetUntil = now+5000;
     if(e===player) showToast('МАГНИТ АКТИВИРОВАН');
-  } else if(id==='freeze'){
-    const target = findNearestEnemyCell(e, 420);
-    if(target){
-      target.owner.frozenUntil = now+2500;
-      if(e===player) showToast('ЗАМОРОЗИЛ '+target.owner.name.toUpperCase());
-      logEvent('<b>'+e.name+'</b> <span style="color:#8fd8ff">заморозил</span> <b>'+target.owner.name+'</b>');
-    } else if(e===player){ showToast('НЕКОГО ЗАМОРАЖИВАТЬ'); }
-    return;
-  } else if(id==='spike'){
-    const target = findNearestEnemyCell(e, 380);
-    if(target && target.owner.cells.length < MAX_CELLS){
-      shatterCell(target.owner, target.cell, {x:target.cell.x,y:target.cell.y}, now);
-      if(e===player) showToast('ШИП ПОРАЗИЛ '+target.owner.name.toUpperCase());
-      logEvent('<b>'+e.name+'</b> <span style="color:#ff5544">поразил шипом</span> <b>'+target.owner.name+'</b>');
-    } else if(e===player){ showToast('НЕКОГО ПОРАЗИТЬ ШИПОМ'); }
-    return;
   }
   const label = POWERUP_LABELS[id];
   if(e===player){
@@ -991,7 +1088,16 @@ function exitToMenu(){
   state='menu';
 }
 document.getElementById('menuBtn').addEventListener('click', exitToMenu);
-document.getElementById('lbExitBtn').addEventListener('click', exitToMenu);
+document.getElementById('lbExitBtn').addEventListener('click', ()=>{
+  const btn = document.getElementById('lbExitBtn');
+  if(btn.dataset.confirm==='1'){
+    exitToMenu();
+    btn.dataset.confirm=''; btn.textContent='Выйти из игры';
+  } else {
+    btn.dataset.confirm='1'; btn.textContent='Точно выйти? Нажми ещё раз';
+    setTimeout(()=>{ if(btn.dataset.confirm==='1'){ btn.dataset.confirm=''; btn.textContent='Выйти из игры'; } }, 3000);
+  }
+});
 document.getElementById('lbToggle').addEventListener('click', ()=>{
   const list = document.getElementById('lbList');
   const collapsing = list.style.display!=='none';
@@ -1078,7 +1184,7 @@ function drawCell(cell, e, now){
 
   const rim = ctx.createRadialGradient(p.x,p.y,r*0.72,p.x,p.y,r);
   rim.addColorStop(0,'rgba(0,0,0,0)');
-  rim.addColorStop(1, cell.inLava ? 'rgba(255,60,0,.45)' : 'rgba(0,0,0,.25)');
+  rim.addColorStop(1, 'rgba(0,0,0,.25)');
   ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fillStyle=rim; ctx.fill();
 
   ctx.lineWidth=1.5; ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.stroke();
@@ -1110,6 +1216,20 @@ function drawFacingArrow(p, r, angle){
   ctx.fillStyle='rgba(255,255,255,.5)';
   ctx.fill();
 }
+let hazardPatternCache = null;
+function getHazardPattern(){
+  if(hazardPatternCache) return hazardPatternCache;
+  const tile = document.createElement('canvas');
+  tile.width=24; tile.height=24;
+  const tctx = tile.getContext('2d');
+  tctx.fillStyle='#141414'; tctx.fillRect(0,0,24,24);
+  tctx.fillStyle='#ffcc00';
+  tctx.save(); tctx.translate(12,12); tctx.rotate(Math.PI/4);
+  tctx.fillRect(-24,-6,48,12);
+  tctx.restore();
+  hazardPatternCache = ctx.createPattern(tile,'repeat');
+  return hazardPatternCache;
+}
 function render(now){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,innerWidth,innerHeight);
@@ -1138,6 +1258,16 @@ function render(now){
     lavaGrad.addColorStop(0.72,'#c9430a'); lavaGrad.addColorStop(1,'#1a0300');
     ctx.fillStyle = lavaGrad;
     ctx.fillRect(0,0,innerWidth,innerHeight);
+    // dark crust plates for texture/contrast
+    for(let i=0;i<16;i++){
+      const ang = (i/16)*Math.PI*2 - now/7000;
+      const rad = edgeRpx*(1.02+0.28*Math.sin(now/2100+i*1.3));
+      const cx2 = wc.x+Math.cos(ang)*rad, cy2 = wc.y+Math.sin(ang)*rad;
+      const cr = 34*cam.zoom*(0.5+0.5*Math.sin(i*1.7));
+      ctx.beginPath(); ctx.arc(cx2,cy2,cr,0,Math.PI*2);
+      ctx.fillStyle='rgba(20,4,2,.55)'; ctx.fill();
+    }
+    // glowing cracks/hotspots on top
     for(let i=0;i<12;i++){
       const ang = (i/12)*Math.PI*2 + now/5000;
       const rad = edgeRpx*(1.04+0.22*Math.sin(now/1400+i));
@@ -1174,9 +1304,9 @@ function render(now){
   }
   ctx.restore();
 
-  // world edge stroke
+  // world edge: black-yellow hazard tape, like a construction danger zone
   ctx.beginPath(); ctx.arc(wc.x,wc.y,WORLD_R*cam.zoom,0,Math.PI*2);
-  ctx.strokeStyle='rgba(255,62,165,.28)'; ctx.lineWidth=3; ctx.stroke();
+  ctx.strokeStyle=getHazardPattern(); ctx.lineWidth=Math.max(6,14*cam.zoom); ctx.stroke();
 
   // black holes
   for(const bh of blackholes){
@@ -1252,6 +1382,12 @@ function render(now){
     ctx.arc(p.x,p.y,r*pulse+14,0,Math.PI*2);
     ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1.4; ctx.stroke();
     ctx.setLineDash([]);
+
+    if(player.activeEmoji && now < player.activeEmoji.until){
+      const bob = Math.sin(now/220)*4;
+      ctx.font='28px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(player.activeEmoji.char, p.x, p.y-r-24+bob);
+    }
   }
 
   // minimap
@@ -1322,10 +1458,14 @@ function loop(ts){
     if(!player) return;
     if(touchAim){
       player.desiredAim = {x:touchAim.x, y:touchAim.y};
-    } else {
+    } else if(usingTouch){
+      player.desiredAim = {x:0, y:0}; // finger lifted on a touch device: stop
+    } else if(mouseActive){
       const dx = mouse.x-innerWidth/2, dy = mouse.y-innerHeight/2;
       const len = Math.hypot(dx,dy)||1;
       player.desiredAim = {x:dx/len, y:dy/len};
+    } else {
+      player.desiredAim = {x:0, y:0}; // no input at all yet
     }
 
     for(const e of entities){
