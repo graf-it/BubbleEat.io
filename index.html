@@ -68,12 +68,17 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 #massBox .label{font-size:10px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;}
 #massBox .val{font-size:24px;font-weight:700;}
 #leaderboard{position:absolute;top:calc(16px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));
-  width:170px;background:rgba(10,10,18,.6);
+  width:170px;background:rgba(10,10,18,.6);pointer-events:auto;
   border:1px solid var(--border);border-radius:14px;padding:10px 12px;backdrop-filter:blur(6px);}
-#leaderboard .title{font-size:10px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
-#leaderboard ol{list-style:none;margin:0;padding:0;font-size:12px;}
+#leaderboard .lbHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;cursor:pointer;}
+#leaderboard .title{font-size:10px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;}
+#lbToggle{color:var(--dim);font-size:11px;transition:transform .2s;}
+#lbToggle.collapsed{transform:rotate(-90deg);}
+#leaderboard ol{list-style:none;margin:0;padding:0;font-size:12px;overflow:hidden;}
 #leaderboard li{display:flex;justify-content:space-between;padding:2px 0;color:var(--dim);}
 #leaderboard li.me{color:var(--cyan);font-weight:600;}
+#lbExitBtn{width:100%;margin-top:8px;padding:7px;border-radius:8px;border:1px solid var(--border);
+  background:#1c0d10;color:#ff9d9d;font-size:11px;font-family:'Space Grotesk';cursor:pointer;}
 #minimapWrap{position:absolute;left:calc(16px + env(safe-area-inset-left));bottom:calc(16px + env(safe-area-inset-bottom));
   width:104px;height:104px;border-radius:50%;
   overflow:hidden;border:1px solid var(--border);background:rgba(10,10,18,.6);}
@@ -94,13 +99,13 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 .logLine.show{opacity:1;transform:translateY(0);}
 .logLine b{color:var(--text);font-weight:600;}
 .slotRow{display:flex;gap:10px;}
-.slotBtn{position:relative;width:50px;height:50px;border-radius:50%;
+.slotBtn{position:relative;width:44px;height:44px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#1c1c2e,#0a0a14 70%);
   border:1.5px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;
   box-shadow:0 4px 14px rgba(0,0,0,.45), inset 0 1px 1px rgba(255,255,255,.08);}
-.slotBtn svg{width:22px;height:22px;}
-.slotBtn.big{width:62px;height:62px;}
-.slotBtn.big svg{width:26px;height:26px;}
+.slotBtn svg{width:19px;height:19px;}
+.slotBtn.big{width:58px;height:58px;}
+.slotBtn.big svg{width:24px;height:24px;}
 .slotBtn .badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;
   background:var(--magenta);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;
   font-family:'Orbitron';box-shadow:0 0 0 2px var(--void);}
@@ -153,14 +158,18 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
       <div class="modeBtn" data-mode="trial">ТАЙМ-ТРИАЛ</div>
     </div>
     <button id="playBtn">В ПУСТОТУ</button>
-    <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1/2/3 — щит / рывок / магнит из инвентаря</div>
+    <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1-5 — щит / рывок / магнит / заморозка / шип из инвентаря</div>
     <div class="verTag">GORGE v1.6.0 · сборка 2026-07-26</div>
   </div>
 </div>
 
 <div id="hud" class="hidden">
   <div id="massBox"><div class="label">Масса</div><div class="val num" id="massVal">20</div></div>
-  <div id="leaderboard"><div class="title">Лидеры</div><ol id="lbList"></ol></div>
+  <div id="leaderboard">
+    <div class="lbHeader"><div class="title">Лидеры</div><div id="lbToggle">▾</div></div>
+    <ol id="lbList"></ol>
+    <button id="lbExitBtn">Выйти из игры</button>
+  </div>
   <div id="minimapWrap"><canvas id="minimap" width="110" height="110"></canvas></div>
   <div id="toast"></div>
   <div id="eventLog"></div>
@@ -179,6 +188,16 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
       <div class="slotBtn empty" id="magnetBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#ffc145" stroke-width="2" stroke-linecap="round"><path d="M6 3v9a6 6 0 0 0 12 0V3"/><path d="M6 3H3v4h3"/><path d="M18 3h3v4h-3"/></svg>
         <div class="badge" id="magnetBadge">0</div>
+      </div>
+    </div>
+    <div class="slotRow">
+      <div class="slotBtn empty" id="freezeBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8fd8ff" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
+        <div class="badge" id="freezeBadge">0</div>
+      </div>
+      <div class="slotBtn empty" id="spikeBtn">
+        <svg viewBox="0 0 24 24" fill="#ff5544"><path d="M12 2l2 6 6-2-4 5 4 5-6-2-2 6-2-6-6 2 4-5-4-5 6 2z"/></svg>
+        <div class="badge" id="spikeBadge">0</div>
       </div>
     </div>
     <div class="slotRow">
@@ -239,6 +258,7 @@ const INVENTORY_CAP = 5;
 const SPLIT_COOLDOWN = 5000;
 const EJECT_COOLDOWN = 5000;
 const FOOD_R_MIN = 4, FOOD_R_MAX = 7;
+const LAVA_DEPTH = 260;
 const SKINS = [
   {name:'ПЛАЗМА', c1:'#2de2e6', c2:'#0f5e8c'},
   {name:'ПЛАМЯ',  c1:'#ff8a3d', c2:'#c22a2a'},
@@ -275,6 +295,10 @@ window.addEventListener('resize', resize); resize();
 if(window.visualViewport){ window.visualViewport.addEventListener('resize', resize); }
 
 const mini = document.getElementById('minimap').getContext('2d');
+const stars = [];
+for(let i=0;i<160;i++){
+  stars.push({x:rand(-WORLD*0.4,WORLD*1.4), y:rand(-WORLD*0.4,WORLD*1.4), r:rand(0.5,1.8), a:rand(0.15,0.5)});
+}
 
 /* ============ game state ============ */
 let state = 'menu'; // menu | playing | dead
@@ -298,6 +322,8 @@ const POWERUP_TYPES = [
   {id:'shield', label:'ЩИТ', color:'#2de2e6'},
   {id:'surge',  label:'РЫВОК', color:'#ff3ea5'},
   {id:'magnet', label:'МАГНИТ', color:'#ffc145'},
+  {id:'freeze', label:'ЗАМОРОЗКА', color:'#8fd8ff'},
+  {id:'spike',  label:'ШИП', color:'#ff5544'},
 ];
 
 /* ============ setup world ============ */
@@ -337,14 +363,14 @@ function spawnBlackholeDirected(bh, angle, now){
   }
   const nh = {x:nx, y:ny, r:rand(30,46), phase:Math.random()*Math.PI*2};
   blackholes.push(nh);
-  // anyone standing where the new hole erupts gets caught in it immediately
+  // anyone standing where the new hole erupts gets caught in it immediately —
+  // same size rule as any other hole contact: only affects a ball bigger than it
   const hitNames = [];
   for(const e of entities){
     if(!e.alive) continue;
     for(const cell of [...e.cells]){
       if(dist(cell.x,cell.y,nh.x,nh.y) < nh.r + massToRadius(cell.mass)*0.55){
-        shatterCell(e, cell, nh, now);
-        if(!hitNames.includes(e.name)) hitNames.push(e.name);
+        if(resolveBlackholeContact(e, cell, nh, now) && !hitNames.includes(e.name)) hitNames.push(e.name);
       }
     }
   }
@@ -359,7 +385,7 @@ function makeEntity(name, isBot, skin){
     name, isBot, color1:s.c1, color2:s.c2, alive:true, bestMass:20,
     shieldUntil:0, surgeUntil:0, magnetUntil:0,
     aim:{x:1,y:0}, desiredAim:{x:1,y:0},
-    inventory:{shield:0, surge:0, magnet:0},
+    inventory:{shield:0, surge:0, magnet:0, freeze:0, spike:0},
     splitCooldownUntil:0, ejectCooldownUntil:0,
     cells:[{ x:p.x, y:p.y, vx:0, vy:0, mass:20, mergeAt:0, faceAngle:0, hazardGraceUntil:0 }],
     ai:{ mode:'wander', target:{x:WORLD_CX,y:WORLD_CY}, nextThink:0 },
@@ -441,6 +467,8 @@ window.addEventListener('keydown', e=>{
   if(e.code==='Digit1'){ useInventoryItem('shield'); }
   if(e.code==='Digit2'){ useInventoryItem('surge'); }
   if(e.code==='Digit3'){ useInventoryItem('magnet'); }
+  if(e.code==='Digit4'){ useInventoryItem('freeze'); }
+  if(e.code==='Digit5'){ useInventoryItem('spike'); }
 });
 function bindTap(el, fn){
   el.addEventListener('click', fn);
@@ -451,11 +479,15 @@ bindTap(document.getElementById('ejectBtn'), ()=>doEject(player));
 bindTap(document.getElementById('shieldBtn'), ()=>useInventoryItem('shield'));
 bindTap(document.getElementById('surgeBtn'), ()=>useInventoryItem('surge'));
 bindTap(document.getElementById('magnetBtn'), ()=>useInventoryItem('magnet'));
+bindTap(document.getElementById('freezeBtn'), ()=>useInventoryItem('freeze'));
+bindTap(document.getElementById('spikeBtn'), ()=>useInventoryItem('spike'));
 
 /* ============ inventory ============ */
+const INVENTORY_TYPES = ['shield','surge','magnet','freeze','spike'];
+const POWERUP_LABELS = {shield:'ЩИТ', surge:'РЫВОК', magnet:'МАГНИТ', freeze:'ЗАМОРОЗКА', spike:'ШИП'};
 function updateInventoryUI(){
   if(!player) return;
-  ['shield','surge','magnet'].forEach(t=>{
+  INVENTORY_TYPES.forEach(t=>{
     const n = player.inventory[t]||0;
     document.getElementById(t+'Badge').textContent = n;
     document.getElementById(t+'Btn').classList.toggle('empty', n<=0);
@@ -467,9 +499,6 @@ function useInventoryItem(type){
   player.inventory[type]--;
   applyPowerup(player, type, performance.now());
   updateInventoryUI();
-  const labelMap = {shield:'ЩИТ', surge:'РЫВОК', magnet:'МАГНИТ'};
-  showToast(labelMap[type]+' АКТИВИРОВАН');
-  logEvent('<b>'+player.name+'</b> применил буст <span style="color:var(--gold)">'+labelMap[type]+'</span>');
   if(tg && tg.HapticFeedback){ try{ tg.HapticFeedback.impactOccurred('medium'); }catch(e){} }
 }
 
@@ -499,17 +528,20 @@ function doEject(e){
   if(!e || !e.alive) return;
   const now = performance.now();
   if(now < (e.ejectCooldownUntil||0)) return;
-  let biggest = e.cells.reduce((a,b)=> a.mass>b.mass?a:b);
-  if(biggest.mass < 30) return;
-  biggest.mass -= 18;
-  e.ejectCooldownUntil = now+EJECT_COOLDOWN;
   const ang = Math.atan2(e.aim.y, e.aim.x);
-  const r = massToRadius(biggest.mass);
-  ejected.push({
-    x: biggest.x+Math.cos(ang)*r, y: biggest.y+Math.sin(ang)*r,
-    vx: Math.cos(ang)*980, vy: Math.sin(ang)*980, r: rand(FOOD_R_MIN,FOOD_R_MAX)*4, mass:16,
-    color:e.color1, owner:e, eatableAt: now+380
-  });
+  let ejectedAny = false;
+  for(const cell of e.cells){
+    if(cell.mass < 30) continue;
+    cell.mass -= 18;
+    const r = massToRadius(cell.mass);
+    ejected.push({
+      x: cell.x+Math.cos(ang)*r, y: cell.y+Math.sin(ang)*r,
+      vx: Math.cos(ang)*980, vy: Math.sin(ang)*980, r: rand(FOOD_R_MIN,FOOD_R_MAX)*4, mass:16,
+      color:e.color1, owner:e, eatableAt: now+380
+    });
+    ejectedAny = true;
+  }
+  if(ejectedAny) e.ejectCooldownUntil = now+EJECT_COOLDOWN;
 }
 
 /* ============ AI ============ */
@@ -531,9 +563,14 @@ function thinkBot(e, now){
     const d = dist(c.x,c.y,bh.x,bh.y);
     if(d < bh.r+160 && d<holeD){ avoidHole=bh; holeD=d; }
   }
+  const distFromCenter = dist(c.x,c.y,WORLD_CX,WORLD_CY);
+  const inDanger = distFromCenter > WORLD_R - 220;
   if(threat){
     e.ai.mode='flee';
     e.ai.target = {x: c.x-(threat.x-c.x), y: c.y-(threat.y-c.y)};
+  } else if(inDanger){
+    e.ai.mode='avoid';
+    e.ai.target = {x:WORLD_CX, y:WORLD_CY};
   } else if(avoidHole){
     e.ai.mode='avoid';
     e.ai.target = {x: c.x-(avoidHole.x-c.x), y: c.y-(avoidHole.y-c.y)};
@@ -544,6 +581,11 @@ function thinkBot(e, now){
     if(e.ai.mode!=='wander' || dist(c.x,c.y,e.ai.target.x,e.ai.target.y) < 60){
       let nearestFood=null, nd=Infinity;
       for(const f of food){ const d=dist(c.x,c.y,f.x,f.y); if(d<nd){nd=d; nearestFood=f;} }
+      for(const p of ejected){
+        if(now < p.eatableAt) continue;
+        const d=dist(c.x,c.y,p.x,p.y);
+        if(d<nd){ nd=d; nearestFood=p; }
+      }
       e.ai.mode='wander';
       e.ai.target = nearestFood ? {x:nearestFood.x,y:nearestFood.y} : randomPointInWorld(200);
     }
@@ -564,6 +606,7 @@ function updateEntity(e, dt, now){
     const r = massToRadius(cell.mass);
     let speed = speedForRadius(r);
     if(now < e.surgeUntil) speed *= 1.55;
+    if(now < (e.frozenUntil||0)) speed = 0;
     const targetVx = e.aim.x*speed, targetVy = e.aim.y*speed;
 
     // base velocity: always tracks the steering target smoothly — this is what
@@ -588,19 +631,27 @@ function updateEntity(e, dt, now){
 
     const dx0=cell.x-WORLD_CX, dy0=cell.y-WORLD_CY;
     const dd = Math.hypot(dx0,dy0);
-    const maxR = WORLD_R - r;
-    if(dd > maxR && dd>0){
-      const k = maxR/dd;
-      cell.x = WORLD_CX+dx0*k; cell.y = WORLD_CY+dy0*k;
-      cell.baseVx*=0.3; cell.baseVy*=0.3; cell.boostVx*=0.3; cell.boostVy*=0.3;
+    const safeR = WORLD_R - r;
+    if(dd > safeR){
+      const depth = Math.min(1, (dd-safeR)/LAVA_DEPTH);
+      cell.mass = Math.max(12, cell.mass - (5+depth*14)*dt);
+      cell.inLava = true;
+      const hardR = WORLD_R + LAVA_DEPTH - r*0.4;
+      if(dd > hardR && dd>0){
+        const k = hardR/dd;
+        cell.x = WORLD_CX+dx0*k; cell.y = WORLD_CY+dy0*k;
+        cell.baseVx*=0.3; cell.baseVy*=0.3; cell.boostVx*=0.3; cell.boostVy*=0.3;
+      }
+    } else {
+      cell.inLava = false;
     }
     const spd = Math.hypot(cell.vx,cell.vy);
     if(spd > 10) cell.faceAngle = Math.atan2(cell.vy,cell.vx);
   }
 
-  // same-owner: cells always feel a gentle pull toward each other (a loose
-  // "swarm" cohesion) so a split doesn't scatter permanently; the pull gets
-  // stronger once the merge cooldown is up, and they actually fuse on contact.
+  // same-owner: before the merge cooldown ends, cells hold a firm "touching but
+  // not overlapping" distance from each other while still drifting together as
+  // a cluster; once mergeable they actively close the gap and fuse.
   for(let i=0;i<e.cells.length;i++){
     for(let j=i+1;j<e.cells.length;j++){
       const a=e.cells[i], b=e.cells[j];
@@ -608,19 +659,23 @@ function updateEntity(e, dt, now){
       const d = dist(a.x,a.y,b.x,b.y)||0.01;
       const canMerge = now>a.mergeAt && now>b.mergeAt;
       const nx=(b.x-a.x)/d, ny=(b.y-a.y)/d;
-      if(canMerge && d < Math.max(ra,rb)*0.7){
-        a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
-        e.cells.splice(j,1); j--; continue;
-      }
-      if(d < ra+rb){
-        if(!canMerge){
-          const overlap = (ra+rb-d);
-          const push = overlap*5*dt;
-          a.boostVx=(a.boostVx||0)-nx*push; a.boostVy=(a.boostVy||0)-ny*push;
-          b.boostVx=(b.boostVx||0)+nx*push; b.boostVy=(b.boostVy||0)+ny*push;
+      const gap = ra+rb;
+      if(canMerge){
+        if(d < Math.max(ra,rb)*0.6){
+          a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
+          e.cells.splice(j,1); j--; continue;
         }
+        const pull = 300*dt;
+        a.boostVx=(a.boostVx||0)+nx*pull; a.boostVy=(a.boostVy||0)+ny*pull;
+        b.boostVx=(b.boostVx||0)-nx*pull; b.boostVy=(b.boostVy||0)-ny*pull;
+      } else if(d < gap){
+        // never allow real overlap before the cooldown is up
+        const overlap = gap-d;
+        const push = overlap*9*dt;
+        a.boostVx=(a.boostVx||0)-nx*push; a.boostVy=(a.boostVy||0)-ny*push;
+        b.boostVx=(b.boostVx||0)+nx*push; b.boostVy=(b.boostVy||0)+ny*push;
       } else {
-        const pull = (canMerge ? 260 : 130) * dt;
+        const pull = 130*dt;
         a.boostVx=(a.boostVx||0)+nx*pull; a.boostVy=(a.boostVy||0)+ny*pull;
         b.boostVx=(b.boostVx||0)-nx*pull; b.boostVy=(b.boostVy||0)-ny*pull;
       }
@@ -640,13 +695,6 @@ function shatterCell(owner, cell, bh, now){
   const idx = owner.cells.indexOf(cell);
   if(idx===-1) return;
   const pushAngle = (cell.x===bh.x && cell.y===bh.y) ? Math.random()*Math.PI*2 : Math.atan2(cell.y-bh.y, cell.x-bh.x);
-  if(cell.mass < SHATTER_MIN_MASS || owner.cells.length >= MAX_CELLS){
-    cell.boostVx = Math.cos(pushAngle)*280; cell.boostVy = Math.sin(pushAngle)*280;
-    cell.mass = Math.max(14, cell.mass*0.88);
-    cell.hazardGraceUntil = now+800;
-    if(owner===player) showToast('ОТБРОШЕН ОТ ЧЁРНОЙ ДЫРЫ');
-    return;
-  }
   const slots = Math.min(3, MAX_CELLS - owner.cells.length + 1);
   const fragMass = cell.mass/slots;
   owner.cells.splice(idx,1);
@@ -659,8 +707,46 @@ function shatterCell(owner, cell, bh, now){
   }
   if(owner===player) showToast('РАЗБИЛСЯ О ЧЁРНУЮ ДЫРУ');
 }
+// A ball only interacts with a hole if it's bigger than the hole: then BOTH the
+// hole is destroyed and the ball shatters (or, if already at 16 pieces, the hole
+// just pops with no further effect on the ball). A smaller ball passes straight
+// through, harmlessly.
+function resolveBlackholeContact(owner, cell, bh, now){
+  const r = massToRadius(cell.mass);
+  if(r <= bh.r) return false;
+  const bhIdx = blackholes.indexOf(bh);
+  if(bhIdx===-1) return false;
+  blackholes.splice(bhIdx,1);
+  spawnParticles(bh.x, bh.y, '#c56bff', 20);
+  if(owner===player) showToast('ЧЁРНАЯ ДЫРА УНИЧТОЖЕНА');
+  if(owner.cells.length < MAX_CELLS){
+    shatterCell(owner, cell, bh, now);
+  }
+  return true;
+}
 
 function handleEating(now, dt){
+  // active shields act like a solid wall — enemy cells get pushed off, can't sit on top
+  for(const shielded of entities){
+    if(!shielded.alive || now >= shielded.shieldUntil) continue;
+    for(const scell of shielded.cells){
+      const sr = massToRadius(scell.mass);
+      for(const other of entities){
+        if(other===shielded || !other.alive) continue;
+        for(const ocell of other.cells){
+          const or_ = massToRadius(ocell.mass);
+          const d = dist(scell.x,scell.y,ocell.x,ocell.y);
+          const minD = sr+or_;
+          if(d < minD && d>0){
+            const nx=(ocell.x-scell.x)/d, ny=(ocell.y-scell.y)/d;
+            ocell.x = scell.x+nx*minD; ocell.y = scell.y+ny*minD;
+            ocell.boostVx = (ocell.boostVx||0)*0.25; ocell.boostVy=(ocell.boostVy||0)*0.25;
+          }
+        }
+      }
+    }
+  }
+
   // food
   for(const e of entities){
     if(!e.alive) continue;
@@ -738,8 +824,8 @@ function handleEating(now, dt){
     }
   }
 
-  // black holes: shatter big cells that ram in
-  const shatterQueue = [];
+  // black holes: size decides the outcome (see resolveBlackholeContact)
+  const holeHits = [];
   for(const e of entities){
     if(!e.alive) continue;
     for(const cell of e.cells){
@@ -747,13 +833,13 @@ function handleEating(now, dt){
       const r = massToRadius(cell.mass);
       for(const bh of blackholes){
         if(dist(cell.x,cell.y,bh.x,bh.y) < bh.r + r*0.55){
-          shatterQueue.push({owner:e, cell, bh});
+          holeHits.push({owner:e, cell, bh});
           break;
         }
       }
     }
   }
-  for(const s of shatterQueue) shatterCell(s.owner, s.cell, s.bh, now);
+  for(const h of holeHits) resolveBlackholeContact(h.owner, h.cell, h.bh, now);
 
   // entity vs entity
   for(const a of entities){
@@ -799,13 +885,50 @@ function handleEating(now, dt){
   }
 }
 
+function findNearestEnemyCell(e, range){
+  const c = centroid(e);
+  let best=null, bestD=range;
+  for(const other of entities){
+    if(other===e || !other.alive) continue;
+    for(const cell of other.cells){
+      const d = dist(c.x,c.y,cell.x,cell.y);
+      if(d<bestD){ bestD=d; best={owner:other, cell}; }
+    }
+  }
+  return best;
+}
 function applyPowerup(e, id, now){
-  if(id==='shield') e.shieldUntil = now+4000;
-  if(id==='surge') e.surgeUntil = now+4000;
-  if(id==='magnet') e.magnetUntil = now+5000;
-  if(e.isBot){
-    const labelMap = {shield:'ЩИТ', surge:'РЫВОК', magnet:'МАГНИТ'};
-    logEvent('<b>'+e.name+'</b> применил буст <span style="color:var(--gold)">'+labelMap[id]+'</span>');
+  if(id==='shield'){
+    e.shieldUntil = now+4000;
+    if(e===player) showToast('ЩИТ АКТИВИРОВАН');
+  } else if(id==='surge'){
+    e.surgeUntil = now+4000;
+    if(e===player) showToast('РЫВОК АКТИВИРОВАН');
+  } else if(id==='magnet'){
+    e.magnetUntil = now+5000;
+    if(e===player) showToast('МАГНИТ АКТИВИРОВАН');
+  } else if(id==='freeze'){
+    const target = findNearestEnemyCell(e, 420);
+    if(target){
+      target.owner.frozenUntil = now+2500;
+      if(e===player) showToast('ЗАМОРОЗИЛ '+target.owner.name.toUpperCase());
+      logEvent('<b>'+e.name+'</b> <span style="color:#8fd8ff">заморозил</span> <b>'+target.owner.name+'</b>');
+    } else if(e===player){ showToast('НЕКОГО ЗАМОРАЖИВАТЬ'); }
+    return;
+  } else if(id==='spike'){
+    const target = findNearestEnemyCell(e, 380);
+    if(target && target.owner.cells.length < MAX_CELLS){
+      shatterCell(target.owner, target.cell, {x:target.cell.x,y:target.cell.y}, now);
+      if(e===player) showToast('ШИП ПОРАЗИЛ '+target.owner.name.toUpperCase());
+      logEvent('<b>'+e.name+'</b> <span style="color:#ff5544">поразил шипом</span> <b>'+target.owner.name+'</b>');
+    } else if(e===player){ showToast('НЕКОГО ПОРАЗИТЬ ШИПОМ'); }
+    return;
+  }
+  const label = POWERUP_LABELS[id];
+  if(e===player){
+    logEvent('<b>'+player.name+'</b> применил буст <span style="color:var(--gold)">'+label+'</span>');
+  } else if(e.isBot){
+    logEvent('<b>'+e.name+'</b> применил буст <span style="color:var(--gold)">'+label+'</span>');
   }
 }
 
@@ -884,13 +1007,35 @@ function drawCell(cell, e, now){
   const p = worldToScreen(cell.x, cell.y);
   const r = massToRadius(cell.mass)*cam.zoom;
   if(p.x<-r||p.x>innerWidth+r||p.y<-r||p.y>innerHeight+r) return;
-  const grad = ctx.createRadialGradient(p.x-r*0.3,p.y-r*0.3,r*0.1,p.x,p.y,r);
-  grad.addColorStop(0, e.color1); grad.addColorStop(1, e.color2);
+
+  ctx.beginPath();
+  ctx.ellipse(p.x+r*0.08, p.y+r*0.18, r*0.94, r*0.8, 0, 0, Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.25)';
+  ctx.fill();
+
+  const grad = ctx.createRadialGradient(p.x-r*0.35,p.y-r*0.4,r*0.05,p.x,p.y,r);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.16, e.color1);
+  grad.addColorStop(0.78, e.color1);
+  grad.addColorStop(1, e.color2);
   ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fillStyle=grad; ctx.fill();
-  ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.stroke();
+
+  const rim = ctx.createRadialGradient(p.x,p.y,r*0.72,p.x,p.y,r);
+  rim.addColorStop(0,'rgba(0,0,0,0)');
+  rim.addColorStop(1, cell.inLava ? 'rgba(255,60,0,.45)' : 'rgba(0,0,0,.25)');
+  ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fillStyle=rim; ctx.fill();
+
+  ctx.lineWidth=1.5; ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.stroke();
   if(now < e.shieldUntil){
     ctx.beginPath(); ctx.arc(p.x,p.y,r+6,0,Math.PI*2);
     ctx.strokeStyle='rgba(45,226,230,.7)'; ctx.lineWidth=2; ctx.stroke();
+  }
+  if(now < (e.frozenUntil||0)){
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fillStyle='rgba(143,216,255,.35)'; ctx.fill();
+    ctx.strokeStyle='rgba(220,245,255,.8)'; ctx.lineWidth=2; ctx.setLineDash([4,5]);
+    ctx.beginPath(); ctx.arc(p.x,p.y,r-2,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
   }
   if(r>22){
     ctx.fillStyle='rgba(255,255,255,.92)'; ctx.font='600 '+clamp(r*0.26,10,16)+'px Space Grotesk';
@@ -898,15 +1043,15 @@ function drawCell(cell, e, now){
   }
 }
 function drawFacingArrow(p, r, angle){
-  const tipX = p.x+Math.cos(angle)*(r+13), tipY = p.y+Math.sin(angle)*(r+13);
-  const baseX = p.x+Math.cos(angle)*(r-3), baseY = p.y+Math.sin(angle)*(r-3);
-  const perp = angle+Math.PI/2, w=7;
+  const tipX = p.x+Math.cos(angle)*(r+6.5), tipY = p.y+Math.sin(angle)*(r+6.5);
+  const baseX = p.x+Math.cos(angle)*(r-1), baseY = p.y+Math.sin(angle)*(r-1);
+  const perp = angle+Math.PI/2, w=3.5;
   ctx.beginPath();
   ctx.moveTo(tipX,tipY);
   ctx.lineTo(baseX+Math.cos(perp)*w, baseY+Math.sin(perp)*w);
   ctx.lineTo(baseX-Math.cos(perp)*w, baseY-Math.sin(perp)*w);
   ctx.closePath();
-  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.fillStyle='rgba(255,255,255,.5)';
   ctx.fill();
 }
 function render(now){
@@ -914,8 +1059,46 @@ function render(now){
   ctx.clearRect(0,0,innerWidth,innerHeight);
   ctx.fillStyle='#05050a'; ctx.fillRect(0,0,innerWidth,innerHeight);
 
-  // world edge (circle) — computed first so the grid can share its center
+  // faint parallax starfield for depth
+  for(const s of stars){
+    const sx = (s.x-cam.x*0.25)*cam.zoom*0.75 + innerWidth/2;
+    const sy = (s.y-cam.y*0.25)*cam.zoom*0.75 + innerHeight/2;
+    if(sx<-4||sx>innerWidth+4||sy<-4||sy>innerHeight+4) continue;
+    ctx.beginPath(); ctx.arc(sx,sy,s.r,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,'+s.a+')'; ctx.fill();
+  }
+
+  // world edge (circle) — computed first so the grid/lava can share its center
   const wc = worldToScreen(WORLD_CX,WORLD_CY);
+  const edgeRpx = WORLD_R*cam.zoom;
+  const cornerDist = Math.max(
+    Math.hypot(wc.x,wc.y), Math.hypot(innerWidth-wc.x,wc.y),
+    Math.hypot(wc.x,innerHeight-wc.y), Math.hypot(innerWidth-wc.x,innerHeight-wc.y)
+  );
+  if(cornerDist > edgeRpx){
+    ctx.save();
+    const lavaGrad = ctx.createRadialGradient(wc.x,wc.y,edgeRpx*0.82, wc.x,wc.y,edgeRpx*1.7);
+    lavaGrad.addColorStop(0,'#3a0a02'); lavaGrad.addColorStop(0.4,'#7a1d02');
+    lavaGrad.addColorStop(0.72,'#c9430a'); lavaGrad.addColorStop(1,'#1a0300');
+    ctx.fillStyle = lavaGrad;
+    ctx.fillRect(0,0,innerWidth,innerHeight);
+    for(let i=0;i<12;i++){
+      const ang = (i/12)*Math.PI*2 + now/5000;
+      const rad = edgeRpx*(1.04+0.22*Math.sin(now/1400+i));
+      const lx = wc.x+Math.cos(ang)*rad, ly = wc.y+Math.sin(ang)*rad;
+      const lr = 26*cam.zoom*(0.6+0.4*Math.sin(now/900+i*2));
+      const g2 = ctx.createRadialGradient(lx,ly,0,lx,ly,lr);
+      g2.addColorStop(0,'rgba(255,180,40,.85)'); g2.addColorStop(1,'rgba(255,80,0,0)');
+      ctx.beginPath(); ctx.arc(lx,ly,lr,0,Math.PI*2); ctx.fillStyle=g2; ctx.fill();
+    }
+    // punch the interior back to void so lava only shows past the boundary
+    ctx.beginPath();
+    ctx.rect(0,0,innerWidth,innerHeight);
+    ctx.arc(wc.x,wc.y,edgeRpx,0,Math.PI*2,true);
+    ctx.fillStyle='#05050a';
+    ctx.fill('evenodd');
+    ctx.restore();
+  }
 
   // polar radar grid, anchored to the MAP (static) — not to the player/camera
   ctx.save();
@@ -959,7 +1142,10 @@ function render(now){
   for(const f of food){
     const p = worldToScreen(f.x,f.y);
     if(p.x<-10||p.x>innerWidth+10||p.y<-10||p.y>innerHeight+10) continue;
-    ctx.beginPath(); ctx.arc(p.x,p.y,f.r*cam.zoom,0,Math.PI*2); ctx.fillStyle=f.color; ctx.globalAlpha=.85; ctx.fill(); ctx.globalAlpha=1;
+    const pulse = 1+Math.sin(now/550+f.x*0.01)*0.18;
+    ctx.beginPath(); ctx.arc(p.x,p.y,f.r*cam.zoom*pulse*1.7,0,Math.PI*2);
+    ctx.fillStyle=f.color; ctx.globalAlpha=.16; ctx.fill(); ctx.globalAlpha=1;
+    ctx.beginPath(); ctx.arc(p.x,p.y,f.r*cam.zoom,0,Math.PI*2); ctx.fillStyle=f.color; ctx.globalAlpha=.9; ctx.fill(); ctx.globalAlpha=1;
   }
   // powerups
   for(const pu of powerups){
@@ -990,13 +1176,19 @@ function render(now){
   allCells.sort((a,b)=>a.c.mass-b.c.mass);
   for(const {c,e} of allCells) drawCell(c,e,now);
 
-  // player: direction arrow on the leading cell + event-horizon signature ring
+  // player: direction arrow on the leading cell (whichever is furthest ahead
+  // along the current heading — changes dynamically as direction changes) + ring
   if(player && player.alive){
-    const leadCell = player.cells[0];
+    const cAll = centroid(player);
+    let leadCell = player.cells[0], bestProj = -Infinity;
+    for(const cc of player.cells){
+      const proj = (cc.x-cAll.x)*player.aim.x + (cc.y-cAll.y)*player.aim.y;
+      if(proj > bestProj){ bestProj = proj; leadCell = cc; }
+    }
     const lp = worldToScreen(leadCell.x, leadCell.y);
     const lr = massToRadius(leadCell.mass)*cam.zoom;
-    drawFacingArrow(lp, lr, leadCell.faceAngle||0);
-    const c = centroid(player);
+    drawFacingArrow(lp, lr, Math.atan2(player.aim.y, player.aim.x));
+    const c = cAll;
     const p = worldToScreen(c.x,c.y);
     const r = massToRadius(totalMass(player))*cam.zoom;
     const pulse = 1+Math.sin(now/ (600+totalMass(player)*4))*0.06;
