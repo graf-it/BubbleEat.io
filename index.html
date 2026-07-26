@@ -7,6 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>GORGE — Feed the Void</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -55,6 +58,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   color:var(--dim);font-size:11px;letter-spacing:.5px;cursor:pointer;}
 .modeBtn.active{color:var(--void);background:linear-gradient(90deg,var(--cyan),var(--magenta));font-weight:600;}
 .hint{font-size:11px;color:var(--dim);margin-top:16px;line-height:1.5;}
+.verTag{font-size:10px;color:var(--dim);opacity:.55;margin-top:14px;letter-spacing:1px;font-family:'Orbitron';}
 
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
@@ -102,6 +106,9 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   font-family:'Orbitron';box-shadow:0 0 0 2px var(--void);}
 .slotBtn.empty{opacity:.32;}
 .slotBtn:active{transform:scale(.92);}
+.slotBtn .cd{position:absolute;inset:0;border-radius:50%;display:none;align-items:center;justify-content:center;
+  font-family:'Orbitron';font-weight:700;font-size:15px;color:#fff;background:rgba(0,0,0,.6);}
+.slotBtn.big .cd{font-size:18px;}
 
 /* ---------- death screen ---------- */
 #deathScreen{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;
@@ -147,6 +154,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
     </div>
     <button id="playBtn">В ПУСТОТУ</button>
     <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1/2/3 — щит / рывок / магнит из инвентаря</div>
+    <div class="verTag">GORGE v1.6.0 · сборка 2026-07-26</div>
   </div>
 </div>
 
@@ -176,9 +184,11 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
     <div class="slotRow">
       <div class="slotBtn big" id="splitBtn">
         <svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="5.5" fill="#2de2e6"/><circle cx="16" cy="12" r="5.5" fill="#ff3ea5" opacity=".85"/></svg>
+        <div class="cd" id="splitCd"></div>
       </div>
       <div class="slotBtn big" id="ejectBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#eef0fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16V7M8 11l4-4 4 4"/></svg>
+        <div class="cd" id="ejectCd"></div>
       </div>
     </div>
   </div>
@@ -588,28 +598,31 @@ function updateEntity(e, dt, now){
     if(spd > 10) cell.faceAngle = Math.atan2(cell.vy,cell.vx);
   }
 
-  // same-owner: merge after cooldown, otherwise gentle separation — both routed
-  // through the boost channel (as forces, not position teleports) so they stay smooth.
+  // same-owner: cells always feel a gentle pull toward each other (a loose
+  // "swarm" cohesion) so a split doesn't scatter permanently; the pull gets
+  // stronger once the merge cooldown is up, and they actually fuse on contact.
   for(let i=0;i<e.cells.length;i++){
     for(let j=i+1;j<e.cells.length;j++){
       const a=e.cells[i], b=e.cells[j];
       const ra=massToRadius(a.mass), rb=massToRadius(b.mass);
       const d = dist(a.x,a.y,b.x,b.y)||0.01;
       const canMerge = now>a.mergeAt && now>b.mergeAt;
-      if(canMerge){
-        if(d < Math.max(ra,rb)*0.7){
-          a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
-          e.cells.splice(j,1); j--; continue;
+      const nx=(b.x-a.x)/d, ny=(b.y-a.y)/d;
+      if(canMerge && d < Math.max(ra,rb)*0.7){
+        a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
+        e.cells.splice(j,1); j--; continue;
+      }
+      if(d < ra+rb){
+        if(!canMerge){
+          const overlap = (ra+rb-d);
+          const push = overlap*5*dt;
+          a.boostVx=(a.boostVx||0)-nx*push; a.boostVy=(a.boostVy||0)-ny*push;
+          b.boostVx=(b.boostVx||0)+nx*push; b.boostVy=(b.boostVy||0)+ny*push;
         }
-        const nx=(b.x-a.x)/d, ny=(b.y-a.y)/d, pull=170*dt;
+      } else {
+        const pull = (canMerge ? 260 : 130) * dt;
         a.boostVx=(a.boostVx||0)+nx*pull; a.boostVy=(a.boostVy||0)+ny*pull;
         b.boostVx=(b.boostVx||0)-nx*pull; b.boostVy=(b.boostVy||0)-ny*pull;
-      } else if(d < ra+rb){
-        const overlap = (ra+rb-d);
-        const push = overlap*7*dt;
-        const ox=(a.x-b.x)/d, oy=(a.y-b.y)/d;
-        a.boostVx=(a.boostVx||0)+ox*push; a.boostVy=(a.boostVy||0)+oy*push;
-        b.boostVx=(b.boostVx||0)-ox*push; b.boostVy=(b.boostVy||0)-oy*push;
       }
     }
   }
@@ -770,7 +783,18 @@ function handleEating(now, dt){
   for(const e of entities){
     if(e.cells.length===0 && e.alive){
       e.alive=false;
-      if(e===player) onPlayerDeath();
+      if(e===player){
+        onPlayerDeath();
+      } else {
+        setTimeout(()=>{
+          if(state!=='playing') return;
+          const idx = entities.indexOf(e);
+          if(idx>=0) entities.splice(idx,1);
+          const fresh = makeEntity(BOT_NAMES[Math.floor(rand(0,BOT_NAMES.length))]+Math.floor(rand(0,99)), true);
+          entities.push(fresh);
+          logEvent('<b>'+fresh.name+'</b> <span style="color:var(--cyan)">подключился</span>');
+        }, rand(3000,6000));
+      }
     }
   }
 }
@@ -968,7 +992,7 @@ function render(now){
 
   // player: direction arrow on the leading cell + event-horizon signature ring
   if(player && player.alive){
-    const leadCell = player.cells.reduce((a,b)=> a.mass>b.mass?a:b);
+    const leadCell = player.cells[0];
     const lp = worldToScreen(leadCell.x, leadCell.y);
     const lr = massToRadius(leadCell.mass)*cam.zoom;
     drawFacingArrow(lp, lr, leadCell.faceAngle||0);
@@ -1002,13 +1026,25 @@ function render(now){
 
 /* ============ HUD updates ============ */
 let lbTimer=0;
+function updateCooldownBtn(btnId, cdId, until, now){
+  const remain = until-now;
+  const btn = document.getElementById(btnId), cd = document.getElementById(cdId);
+  if(remain > 0){
+    btn.classList.add('empty');
+    cd.style.display='flex';
+    cd.textContent = Math.ceil(remain/1000);
+  } else {
+    btn.classList.remove('empty');
+    cd.style.display='none';
+  }
+}
 function updateHud(now, dt){
   if(!player || !player.alive) return;
   const tm = totalMass(player);
   sessionBest = Math.max(sessionBest, tm);
   document.getElementById('massVal').textContent = Math.round(tm);
-  document.getElementById('splitBtn').classList.toggle('empty', now < (player.splitCooldownUntil||0));
-  document.getElementById('ejectBtn').classList.toggle('empty', now < (player.ejectCooldownUntil||0));
+  updateCooldownBtn('splitBtn','splitCd', player.splitCooldownUntil||0, now);
+  updateCooldownBtn('ejectBtn','ejectCd', player.ejectCooldownUntil||0, now);
   lbTimer -= dt;
   if(lbTimer<=0){
     lbTimer = 0.35;
