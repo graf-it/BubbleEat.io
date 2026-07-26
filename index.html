@@ -260,13 +260,18 @@ const EJECT_COOLDOWN = 5000;
 const FOOD_R_MIN = 4, FOOD_R_MAX = 7;
 const LAVA_DEPTH = 260;
 const SKINS = [
-  {name:'ПЛАЗМА', c1:'#2de2e6', c2:'#0f5e8c'},
-  {name:'ПЛАМЯ',  c1:'#ff8a3d', c2:'#c22a2a'},
-  {name:'ТОКСИН', c1:'#b6ff3d', c2:'#2a7d2a'},
-  {name:'НЕКРО',  c1:'#c56bff', c2:'#2a1a4a'},
-  {name:'ЗЛАТО',  c1:'#ffd76b', c2:'#a8720d'},
-  {name:'КРИО',   c1:'#c7f5ff', c2:'#3d7fa8'},
-  {name:'РОЗА',   c1:'#ff6bc7', c2:'#7d1a5a'},
+  {name:'ПЛАЗМА', c1:'#2de2e6', c2:'#0f5e8c', pattern:'swirl'},
+  {name:'ПЛАМЯ',  c1:'#ff8a3d', c2:'#c22a2a', pattern:'stripe'},
+  {name:'ТОКСИН', c1:'#b6ff3d', c2:'#2a7d2a', pattern:'dots'},
+  {name:'НЕКРО',  c1:'#c56bff', c2:'#2a1a4a', pattern:'nebula'},
+  {name:'ЗЛАТО',  c1:'#ffd76b', c2:'#a8720d', pattern:'metal'},
+  {name:'КРИО',   c1:'#c7f5ff', c2:'#3d7fa8', pattern:'swirl'},
+  {name:'РОЗА',   c1:'#ff6bc7', c2:'#7d1a5a', pattern:'dots'},
+  {name:'ШТОРМ',  c1:'#8fa6ff', c2:'#1a2a6b', pattern:'stripe'},
+  {name:'КОРАЛЛ', c1:'#ff9d8a', c2:'#8a2a2a', pattern:'nebula'},
+  {name:'ОБСИДИАН', c1:'#9a9aac', c2:'#101018', pattern:'metal'},
+  {name:'ВЕНОМ',  c1:'#d4ff3d', c2:'#1a3a1a', pattern:'stripe'},
+  {name:'МИРАЖ',  c1:'#ffb3f0', c2:'#3a1a4a', pattern:'nebula'},
 ];
 const BOT_NAMES = ['Керн','Нексус','Затмение','Пульсар','Квазар','Тень','Астер','Вихрь','Оникс','Фобос','Немезида','Горгона','Спектр','Дрейф','Морок','Апекс'];
 
@@ -382,7 +387,7 @@ function makeEntity(name, isBot, skin){
   const p = randomPointInWorld(300);
   return {
     id: Math.random().toString(36).slice(2),
-    name, isBot, color1:s.c1, color2:s.c2, alive:true, bestMass:20,
+    name, isBot, color1:s.c1, color2:s.c2, pattern:s.pattern||'none', alive:true, bestMass:20,
     shieldUntil:0, surgeUntil:0, magnetUntil:0,
     aim:{x:1,y:0}, desiredAim:{x:1,y:0},
     inventory:{shield:0, surge:0, magnet:0, freeze:0, spike:0},
@@ -979,11 +984,20 @@ document.getElementById('respawnBtn').addEventListener('click', ()=>{
   logEvent('<b>'+player.name+'</b> <span style="color:var(--cyan)">вернулся в пустоту</span>');
   state='playing';
 });
-document.getElementById('menuBtn').addEventListener('click', ()=>{
+function exitToMenu(){
   document.getElementById('deathScreen').classList.add('hidden');
   document.getElementById('startScreen').classList.remove('hidden');
   document.getElementById('hud').classList.add('hidden');
   state='menu';
+}
+document.getElementById('menuBtn').addEventListener('click', exitToMenu);
+document.getElementById('lbExitBtn').addEventListener('click', exitToMenu);
+document.getElementById('lbToggle').addEventListener('click', ()=>{
+  const list = document.getElementById('lbList');
+  const collapsing = list.style.display!=='none';
+  list.style.display = collapsing ? 'none' : '';
+  document.getElementById('lbExitBtn').style.display = collapsing ? 'none' : '';
+  document.getElementById('lbToggle').classList.toggle('collapsed', collapsing);
 });
 
 /* ============ camera ============ */
@@ -1003,6 +1017,46 @@ function updateCamera(dt){
 function worldToScreen(x,y){
   return { x:(x-cam.x)*cam.zoom + innerWidth/2, y:(y-cam.y)*cam.zoom + innerHeight/2 };
 }
+function drawSkinPattern(p, r, pattern, now){
+  ctx.save();
+  ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.clip();
+  if(pattern==='stripe'){
+    ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.lineWidth=r*0.22;
+    for(let i=-2;i<=2;i++){
+      ctx.beginPath();
+      ctx.moveTo(p.x-r*1.4+i*r*0.55, p.y-r*1.4);
+      ctx.lineTo(p.x+r*1.4+i*r*0.55, p.y+r*1.4);
+      ctx.stroke();
+    }
+  } else if(pattern==='dots'){
+    ctx.fillStyle='rgba(0,0,0,.22)';
+    for(let i=0;i<7;i++){
+      const a=i*2.4+(p.x%10), rr=r*(0.25+0.5*((i*37)%10)/10);
+      ctx.beginPath(); ctx.arc(p.x+Math.cos(a)*rr, p.y+Math.sin(a)*rr, r*0.11, 0, Math.PI*2); ctx.fill();
+    }
+  } else if(pattern==='swirl'){
+    ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=r*0.1;
+    for(let s=0;s<3;s++){
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,r*(0.35+s*0.25), now/900+s*2, now/900+s*2+2.4);
+      ctx.stroke();
+    }
+  } else if(pattern==='metal'){
+    for(let i=-1;i<=1;i++){
+      const g=ctx.createLinearGradient(p.x-r,p.y+i*r*0.5,p.x+r,p.y+i*r*0.5);
+      g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(0.5,'rgba(255,255,255,.28)'); g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g;
+      ctx.fillRect(p.x-r,p.y+i*r*0.5-r*0.09,r*2,r*0.18);
+    }
+  } else if(pattern==='nebula'){
+    for(let i=0;i<10;i++){
+      const a=i*1.7+(p.y%7), rr=r*(0.15+0.7*((i*53)%10)/10);
+      ctx.beginPath(); ctx.arc(p.x+Math.cos(a)*rr,p.y+Math.sin(a)*rr, 1.1, 0, Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.7)'; ctx.fill();
+    }
+  }
+  ctx.restore();
+}
 function drawCell(cell, e, now){
   const p = worldToScreen(cell.x, cell.y);
   const r = massToRadius(cell.mass)*cam.zoom;
@@ -1019,6 +1073,8 @@ function drawCell(cell, e, now){
   grad.addColorStop(0.78, e.color1);
   grad.addColorStop(1, e.color2);
   ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fillStyle=grad; ctx.fill();
+
+  if(r>8) drawSkinPattern(p, r, e.pattern, now);
 
   const rim = ctx.createRadialGradient(p.x,p.y,r*0.72,p.x,p.y,r);
   rim.addColorStop(0,'rgba(0,0,0,0)');
@@ -1241,7 +1297,7 @@ function updateHud(now, dt){
   if(lbTimer<=0){
     lbTimer = 0.35;
     const ranked = entities.filter(e=>e.alive).map(e=>({e, m:totalMass(e)})).sort((a,b)=>b.m-a.m);
-    const top = ranked.slice(0,6);
+    const top = ranked.slice(0,5);
     let html='';
     top.forEach((r,i)=>{
       html += '<li class="'+(r.e===player?'me':'')+'"><span>'+(i+1)+'. '+r.e.name+'</span><span>'+Math.round(r.m)+'</span></li>';
