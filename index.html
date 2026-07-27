@@ -67,8 +67,8 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
 #massBox{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(194px + env(safe-area-inset-left));
-  background:rgba(10,10,18,.6);border:1px solid var(--border);
-  border-radius:10px;padding:5px 9px;backdrop-filter:blur(6px);}
+  background:rgba(10,10,18,.6);border:1px solid var(--border);display:flex;gap:10px;
+  border-radius:10px;padding:5px 10px;backdrop-filter:blur(6px);}
 #massBox .label{font-size:7px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;}
 #massBox .val{font-size:14px;font-weight:700;}
 #leaderboard{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));
@@ -100,7 +100,8 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   top:28px;left:28px;}
 
 #actionCluster{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));
-  display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:auto;}
+  display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:auto;
+  transform:scale(var(--btn-scale, 1));transform-origin:bottom right;}
 #eventLog{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);
   display:flex;flex-direction:column-reverse;gap:5px;align-items:center;max-width:78vw;}
 .logLine{background:rgba(10,10,18,.55);border:1px solid var(--border);border-radius:8px;padding:4px 11px;
@@ -127,6 +128,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
 .slotBtn .cd{position:absolute;inset:0;border-radius:50%;display:none;align-items:center;justify-content:center;
   font-family:'Orbitron';font-weight:700;font-size:15px;color:#fff;background:rgba(0,0,0,.6);}
 .slotBtn.big .cd{font-size:18px;}
+.slotBtn.small .cd{font-size:12px;}
 
 /* ---------- death screen ---------- */
 #deathScreen{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;
@@ -170,18 +172,26 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
       <div class="sizeLabel">Стартовый размер <span id="sizeVal">20</span></div>
       <input type="range" id="sizeSlider" min="14" max="60" value="20">
     </div>
+    <div class="sizeRow">
+      <div class="sizeLabel">Размер кнопок <span id="btnSizeVal">100%</span></div>
+      <input type="range" id="btnSizeSlider" min="70" max="150" value="100">
+    </div>
     <div class="modeRow">
       <div class="modeBtn active" data-mode="bots">АРЕНА С БОТАМИ</div>
       <div class="modeBtn" data-mode="trial">ТАЙМ-ТРИАЛ</div>
     </div>
     <button id="playBtn">В ПУСТОТУ</button>
     <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1-5 — щит / рывок / магнит / заморозка / шип из инвентаря</div>
-    <div class="verTag">BUBBLE EAT v2.2.0 · сборка 2026-07-26</div>
+    <div class="verTag">BUBBLE EAT v2.3.0 · сборка 2026-07-26</div>
   </div>
 </div>
 
 <div id="hud" class="hidden">
-  <div id="massBox"><div class="label">Масса</div><div class="val num" id="massVal">20</div></div>
+  <div id="massBox">
+    <div class="statItem"><div class="label">Масса</div><div class="val num" id="massVal">20</div></div>
+    <div class="statItem"><div class="label">Время</div><div class="val num" id="timeVal">00:00</div></div>
+    <div class="statItem"><div class="label">Съедено</div><div class="val num" id="killVal">0</div></div>
+  </div>
   <div id="leaderboard">
     <div class="lbHeader"><div class="title">Лидеры</div><div id="lbToggle">▾</div></div>
     <ol id="lbList"></ol>
@@ -217,10 +227,12 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
       <div class="slotBtn empty small" id="freezeBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#8fd8ff" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
         <div class="badge" id="freezeBadge">0</div>
+        <div class="cd" id="freezeCd"></div>
       </div>
       <div class="slotBtn empty small" id="spikeBtn">
         <svg viewBox="0 0 24 24" fill="#ff5544"><path d="M12 2l2 6 6-2-4 5 4 5-6-2-2 6-2-6-6 2 4-5-4-5 6 2z"/></svg>
         <div class="badge" id="spikeBadge">0</div>
+        <div class="cd" id="spikeCd"></div>
       </div>
     </div>
     <div class="slotRow">
@@ -349,6 +361,8 @@ let cam = {x:WORLD_CX, y:WORLD_CY, zoom:1};
 let player = null;
 let lastTime = 0;
 let sessionBest = 0;
+let killCount = 0;
+let lifeStartTime = 0;
 let nextSpontaneousHoleAt = 0;
 
 const POWERUP_TYPES = [
@@ -432,6 +446,15 @@ function centroid(e){
   for(const c of e.cells){ x+=c.x*c.mass; y+=c.y*c.mass; tm+=c.mass; }
   return {x:x/tm, y:y/tm};
 }
+function getLeadCell(e){
+  const c = centroid(e);
+  let lead = e.cells[0], best = -Infinity;
+  for(const cc of e.cells){
+    const proj = (cc.x-c.x)*e.aim.x + (cc.y-c.y)*e.aim.y;
+    if(proj > best){ best = proj; lead = cc; }
+  }
+  return lead;
+}
 
 /* ============ start / reset ============ */
 function resetGame(){
@@ -450,6 +473,8 @@ function resetGame(){
   const c = centroid(player);
   cam.x=c.x; cam.y=c.y; cam.zoom=1.35;
   sessionBest = startMass;
+  killCount = 0;
+  lifeStartTime = performance.now();
   nextSpontaneousHoleAt = performance.now() + rand(12000,20000);
   updateInventoryUI();
 }
@@ -538,13 +563,16 @@ function updateInventoryUI(){
 function launchSlime(e, kind){
   if(!e || !e.alive) return false;
   const now = performance.now();
-  let biggest = e.cells.reduce((a,b)=> a.mass>b.mass?a:b);
-  if(biggest.mass < 24) return false;
-  biggest.mass -= 10;
+  const cdKey = kind+'CooldownUntil';
+  if(now < (e[cdKey]||0)) return false;
+  const cell = getLeadCell(e);
+  if(cell.mass < 24) return false;
+  cell.mass -= 10;
+  e[cdKey] = now+5000;
   const ang = Math.atan2(e.aim.y, e.aim.x);
-  const r = massToRadius(biggest.mass);
+  const r = massToRadius(cell.mass);
   ejected.push({
-    x: biggest.x+Math.cos(ang)*r, y: biggest.y+Math.sin(ang)*r,
+    x: cell.x+Math.cos(ang)*r, y: cell.y+Math.sin(ang)*r,
     vx: Math.cos(ang)*900, vy: Math.sin(ang)*900, r:14, mass:0,
     color: kind==='freeze' ? '#8fd8ff' : '#ff5544',
     owner:e, kind, eatableAt: now+220, bornAt: now
@@ -555,7 +583,7 @@ function useInventoryItem(type){
   if(!player || !player.alive) return;
   if(!player.inventory[type]) return;
   if(type==='freeze' || type==='spike'){
-    if(!launchSlime(player, type)){ showToast('НЕДОСТАТОЧНО МАССЫ'); return; }
+    if(!launchSlime(player, type)){ return; }
     player.inventory[type]--;
     updateInventoryUI();
     if(tg && tg.HapticFeedback){ try{ tg.HapticFeedback.impactOccurred('medium'); }catch(e){} }
@@ -749,12 +777,24 @@ function updateEntity(e, dt, now){
         a.boostVx=(a.boostVx||0)+nx*pull; a.boostVy=(a.boostVy||0)+ny*pull;
         b.boostVx=(b.boostVx||0)-nx*pull; b.boostVy=(b.boostVy||0)-ny*pull;
       } else if(d < gap){
-        // hard positional fix — guaranteed no real overlap before the cooldown is up
-        const corr = (gap-d)*0.5;
-        a.x -= nx*corr; a.y -= ny*corr;
-        b.x += nx*corr; b.y += ny*corr;
-        a.boostVx=(a.boostVx||0)*0.5; a.boostVy=(a.boostVy||0)*0.5;
-        b.boostVx=(b.boostVx||0)*0.5; b.boostVy=(b.boostVy||0)*0.5;
+        const aBoostSpd = Math.hypot(a.boostVx||0, a.boostVy||0);
+        const bBoostSpd = Math.hypot(b.boostVx||0, b.boostVy||0);
+        if(aBoostSpd < 60 && bBoostSpd < 60){
+          // both settled: hard positional fix, guaranteed no lingering overlap
+          const corr = (gap-d)*0.5;
+          a.x -= nx*corr; a.y -= ny*corr;
+          b.x += nx*corr; b.y += ny*corr;
+          a.boostVx=(a.boostVx||0)*0.5; a.boostVy=(a.boostVy||0)*0.5;
+          b.boostVx=(b.boostVx||0)*0.5; b.boostVy=(b.boostVy||0)*0.5;
+        } else {
+          // still actively flying (e.g. fresh off a split) — let the launch
+          // velocity carry them apart naturally instead of snapping positions,
+          // that's what gives the split its "kick"
+          const overlap = gap-d;
+          const push = overlap*6*dt;
+          a.boostVx=(a.boostVx||0)-nx*push; a.boostVy=(a.boostVy||0)-ny*push;
+          b.boostVx=(b.boostVx||0)+nx*push; b.boostVy=(b.boostVy||0)+ny*push;
+        }
       } else {
         const pull = 90*dt;
         a.boostVx=(a.boostVx||0)+nx*pull; a.boostVy=(a.boostVy||0)+ny*pull;
@@ -779,10 +819,12 @@ function shatterCell(owner, cell, bh, now){
   const slots = Math.min(3, MAX_CELLS - owner.cells.length + 1);
   const fragMass = cell.mass/slots;
   owner.cells.splice(idx,1);
+  spawnParticles(cell.x, cell.y, owner.color1, 16);
   for(let k=0;k<slots;k++){
-    const ang = pushAngle + rand(-0.9,0.9);
+    const ang = pushAngle + rand(-1.3,1.3);
+    const spd = rand(520,720);
     owner.cells.push({
-      x:cell.x, y:cell.y, vx:0, vy:0, boostVx:Math.cos(ang)*320, boostVy:Math.sin(ang)*320,
+      x:cell.x, y:cell.y, vx:0, vy:0, boostVx:Math.cos(ang)*spd, boostVy:Math.sin(ang)*spd,
       mass:fragMass, mergeAt: now+MERGE_COOLDOWN, faceAngle:ang, hazardGraceUntil: now+800
     });
   }
@@ -998,6 +1040,7 @@ function handleEating(now, dt){
             if(a===player) showToast('+'+Math.round(bcell.mass)+' МАССЫ');
             if(b.cells.length===0){
               logEvent('<b>'+a.name+'</b> <span style="color:var(--magenta)">поглотил</span> <b>'+b.name+'</b>');
+              if(a===player) killCount++;
             }
           }
         }
@@ -1097,6 +1140,8 @@ document.getElementById('respawnBtn').addEventListener('click', ()=>{
   entities.push(player);
   const c = centroid(player); cam.x=c.x; cam.y=c.y; cam.zoom=1.35;
   sessionBest = startMass;
+  killCount = 0;
+  lifeStartTime = performance.now();
   updateInventoryUI();
   logEvent('<b>'+player.name+'</b> <span style="color:var(--cyan)">вернулся в пустоту</span>');
   state='playing';
@@ -1382,11 +1427,7 @@ function render(now){
   // along the current heading — changes dynamically as direction changes) + ring
   if(player && player.alive){
     const cAll = centroid(player);
-    let leadCell = player.cells[0], bestProj = -Infinity;
-    for(const cc of player.cells){
-      const proj = (cc.x-cAll.x)*player.aim.x + (cc.y-cAll.y)*player.aim.y;
-      if(proj > bestProj){ bestProj = proj; leadCell = cc; }
-    }
+    const leadCell = getLeadCell(player);
     const lp = worldToScreen(leadCell.x, leadCell.y);
     const lr = massToRadius(leadCell.mass)*cam.zoom;
     drawFacingArrow(lp, lr, Math.atan2(player.aim.y, player.aim.x));
@@ -1438,13 +1479,25 @@ function updateCooldownBtn(btnId, cdId, until, now){
     cd.style.display='none';
   }
 }
+function updateCooldownNumberOnly(cdId, until, now){
+  const remain = until-now;
+  const cd = document.getElementById(cdId);
+  if(remain > 0){ cd.style.display='flex'; cd.textContent = Math.ceil(remain/1000); }
+  else { cd.style.display='none'; }
+}
 function updateHud(now, dt){
   if(!player || !player.alive) return;
   const tm = totalMass(player);
   sessionBest = Math.max(sessionBest, tm);
   document.getElementById('massVal').textContent = Math.round(tm);
+  const elapsed = Math.max(0, Math.floor((now-lifeStartTime)/1000));
+  const mm = String(Math.floor(elapsed/60)).padStart(2,'0'), ss = String(elapsed%60).padStart(2,'0');
+  document.getElementById('timeVal').textContent = mm+':'+ss;
+  document.getElementById('killVal').textContent = killCount;
   updateCooldownBtn('splitBtn','splitCd', player.splitCooldownUntil||0, now);
   updateCooldownBtn('ejectBtn','ejectCd', player.ejectCooldownUntil||0, now);
+  updateCooldownNumberOnly('freezeCd', player.freezeCooldownUntil||0, now);
+  updateCooldownNumberOnly('spikeCd', player.spikeCooldownUntil||0, now);
   lbTimer -= dt;
   if(lbTimer<=0){
     lbTimer = 0.35;
@@ -1520,6 +1573,11 @@ document.getElementById('skinNext').onclick = ()=>{ skinIdx=(skinIdx+1)%SKINS.le
 document.getElementById('sizeSlider').addEventListener('input', e=>{
   startMass = parseInt(e.target.value,10);
   document.getElementById('sizeVal').textContent = startMass;
+});
+document.getElementById('btnSizeSlider').addEventListener('input', e=>{
+  const pct = parseInt(e.target.value,10);
+  document.getElementById('btnSizeVal').textContent = pct+'%';
+  document.documentElement.style.setProperty('--btn-scale', pct/100);
 });
 
 document.querySelectorAll('.modeBtn').forEach(btn=>{
