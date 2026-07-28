@@ -70,8 +70,8 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   background:rgba(10,10,18,.6);border:1px solid var(--border);display:flex;gap:10px;
   border-radius:10px;padding:5px 10px;backdrop-filter:blur(6px);}
 #massBox .label{font-size:7px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;}
-#massBox .val{font-size:14px;font-weight:700;min-width:42px;display:inline-block;text-align:left;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
-#massBox .statItem{min-width:46px;flex-shrink:0;}
+#massBox .val{font-size:14px;font-weight:700;width:48px;display:inline-block;text-align:left;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+#massBox .statItem{width:52px;flex-shrink:0;}
 #leaderboard{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));
   width:170px;background:rgba(10,10,18,.6);pointer-events:auto;
   border:1px solid var(--border);border-radius:14px;padding:10px 12px;backdrop-filter:blur(6px);}
@@ -183,7 +183,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
     </div>
     <button id="playBtn">В ПУСТОТУ</button>
     <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1-5 — щит / рывок / магнит / заморозка / шип из инвентаря</div>
-    <div class="verTag">BUBBLE EAT v2.5.0 · сборка 2026-07-26</div>
+    <div class="verTag">BUBBLE EAT v2.6.0 · сборка 2026-07-26</div>
   </div>
 </div>
 
@@ -289,7 +289,8 @@ const MAX_CELLS = 16;
 const MERGE_COOLDOWN = 30000;
 function mergeCooldownFor(mass){ return Math.min(60000, 25000 + mass*20); }
 const BLACKHOLE_START = 7;
-const BLACKHOLE_MAX = 22;
+const BLACKHOLE_SPONTANEOUS_MAX = 22;
+const BLACKHOLE_HARD_CAP = 400;
 const SHATTER_MIN_MASS = 30;
 const INVENTORY_CAP = 5;
 const SPLIT_COOLDOWN = 5000;
@@ -422,7 +423,7 @@ function spawnBlackholes(){
   for(let i=0;i<BLACKHOLE_START;i++) blackholes.push(makeBlackhole());
 }
 function spawnBlackholeDirected(bh, angle, now){
-  if(blackholes.length >= BLACKHOLE_MAX) return null;
+  if(blackholes.length >= BLACKHOLE_HARD_CAP) return null;
   const d = rand(150,260);
   let nx = bh.x+Math.cos(angle)*d, ny = bh.y+Math.sin(angle)*d;
   const distFromCenter = Math.hypot(nx-WORLD_CX, ny-WORLD_CY);
@@ -647,7 +648,7 @@ function doSplit(e){
       c.mass = half;
       const ang = Math.atan2(e.aim.y, e.aim.x);
       const rr = massToRadius(half);
-      const boost = clamp(900 - rr*8, 300, 650) * countDamp;
+      const boost = clamp(1150 - rr*9, 420, 850) * countDamp;
       newCells.push({x:c.x, y:c.y, vx:0, vy:0, boostVx:Math.cos(ang)*boost, boostVy:Math.sin(ang)*boost, mass:half,
         mergeAt: now+mergeCooldownFor(half), faceAngle:ang, hazardGraceUntil:0});
       c.mergeAt = now+mergeCooldownFor(half);
@@ -747,7 +748,7 @@ function updateEntity(e, dt, now){
     // base velocity: always tracks the steering target smoothly — this is what
     // gives the player continuous control, split or not.
     if(cell.baseVx===undefined){ cell.baseVx=targetVx; cell.baseVy=targetVy; }
-    const vSmooth = 1 - Math.exp(-dt*5.5);
+    const vSmooth = 1 - Math.exp(-dt*7);
     cell.baseVx += (targetVx-cell.baseVx)*vSmooth;
     cell.baseVy += (targetVy-cell.baseVy)*vSmooth;
 
@@ -756,7 +757,7 @@ function updateEntity(e, dt, now){
     // own (framerate-independent) while steering keeps working underneath it —
     // that combination is what makes a split feel like a smooth "shot" rather
     // than an instant snap.
-    const boostDecay = Math.exp(-dt*2.6);
+    const boostDecay = Math.exp(-dt*3.2);
     cell.boostVx = (cell.boostVx||0)*boostDecay;
     cell.boostVy = (cell.boostVy||0)*boostDecay;
 
@@ -803,7 +804,7 @@ function updateEntity(e, dt, now){
   // 2) a single pull per cell toward the WHOLE cluster's center of mass
   //    (not pairwise to every sibling) — O(n) instead of O(n²), which is what
   //    actually stops the erratic multi-body jitter.
-  const SPRING_K = 60;
+  const SPRING_K = 95;
   for(let i=0;i<e.cells.length;i++){
     for(let j=i+1;j<e.cells.length;j++){
       const a=e.cells[i], b=e.cells[j];
@@ -817,7 +818,7 @@ function updateEntity(e, dt, now){
           a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
           e.cells.splice(j,1); j--; continue;
         }
-        const pull = 280*dt;
+        const pull = 420*dt;
         a.boostVx=(a.boostVx||0)+nx*pull; a.boostVy=(a.boostVy||0)+ny*pull;
         b.boostVx=(b.boostVx||0)-nx*pull; b.boostVy=(b.boostVy||0)-ny*pull;
       } else if(d < gap){
@@ -835,7 +836,7 @@ function updateEntity(e, dt, now){
       const dC = dist(cell.x,cell.y,center.x,center.y);
       if(dC > cr*0.4){
         const nx=(center.x-cell.x)/dC, ny=(center.y-cell.y)/dC;
-        const pull = 55*dt;
+        const pull = 100*dt;
         cell.boostVx=(cell.boostVx||0)+nx*pull; cell.boostVy=(cell.boostVy||0)+ny*pull;
       }
     }
@@ -1215,11 +1216,22 @@ function updateCamera(dt){
   const c = centroid(player);
   const tm = totalMass(player);
   const massZoom = 1.35 / Math.pow(tm/20, 0.24);
-  const splitFactor = 1 - Math.min(0.35, (player.cells.length-1)*0.045); // splitting into more pieces widens the view too
-  const targetZoom = clamp(massZoom*splitFactor, 0.22, 1.5);
+
+  // how far does the cluster actually reach right now (including a cell
+  // still flying outward from a split)? the camera must never let that
+  // go off-screen, so this directly overrides the mass-based zoom when needed.
+  let maxReach = massToRadius(tm/player.cells.length);
+  for(const cell of player.cells){
+    const reach = dist(cell.x,cell.y,c.x,c.y) + massToRadius(cell.mass);
+    if(reach > maxReach) maxReach = reach;
+  }
+  const viewHalf = Math.min(innerWidth, innerHeight)/2 * 0.8;
+  const spreadZoom = viewHalf / maxReach;
+
+  const targetZoom = clamp(Math.min(massZoom, spreadZoom), 0.16, 1.5);
   cam.x += (c.x-cam.x)*Math.min(1,dt*4);
   cam.y += (c.y-cam.y)*Math.min(1,dt*4);
-  cam.zoom += (targetZoom-cam.zoom)*Math.min(1,dt*3.2);
+  cam.zoom += (targetZoom-cam.zoom)*Math.min(1,dt*5);
 }
 
 /* ============ render ============ */
@@ -1604,7 +1616,7 @@ function loop(ts){
     }
     handleEating(now, dt);
     updateBlackholes(now);
-    if(now > nextSpontaneousHoleAt && blackholes.length < BLACKHOLE_MAX){
+    if(now > nextSpontaneousHoleAt && blackholes.length < BLACKHOLE_SPONTANEOUS_MAX){
       blackholes.push(makeBlackhole());
       nextSpontaneousHoleAt = now + rand(18000,32000);
     }
