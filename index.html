@@ -70,8 +70,8 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
   background:rgba(10,10,18,.6);border:1px solid var(--border);display:flex;gap:10px;
   border-radius:10px;padding:5px 10px;backdrop-filter:blur(6px);}
 #massBox .label{font-size:7px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;}
-#massBox .val{font-size:14px;font-weight:700;min-width:34px;display:inline-block;font-variant-numeric:tabular-nums;}
-#massBox .statItem{min-width:44px;}
+#massBox .val{font-size:14px;font-weight:700;min-width:42px;display:inline-block;text-align:left;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+#massBox .statItem{min-width:46px;flex-shrink:0;}
 #leaderboard{position:absolute;top:calc(16px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));
   width:170px;background:rgba(10,10,18,.6);pointer-events:auto;
   border:1px solid var(--border);border-radius:14px;padding:10px 12px;backdrop-filter:blur(6px);}
@@ -183,7 +183,7 @@ h1,h2,.num{font-family:'Orbitron',sans-serif;}
     </div>
     <button id="playBtn">В ПУСТОТУ</button>
     <div class="hint">Мышь / палец — движение · Пробел — раздвоиться · E — выброс массы<br>1-5 — щит / рывок / магнит / заморозка / шип из инвентаря</div>
-    <div class="verTag">BUBBLE EAT v2.4.0 · сборка 2026-07-26</div>
+    <div class="verTag">BUBBLE EAT v2.5.0 · сборка 2026-07-26</div>
   </div>
 </div>
 
@@ -353,6 +353,17 @@ const lavaSpots = [];
 for(let i=0;i<55;i++){
   lavaSpots.push({nx:Math.random(), ny:Math.random(), r:rand(24,80), dark:Math.random()<0.55, phase:Math.random()*Math.PI*2});
 }
+const lavaCracks = [];
+for(let i=0;i<20;i++){
+  let cx=Math.random(), cy=Math.random();
+  const pts=[{x:cx,y:cy}];
+  const segs = 3+Math.floor(Math.random()*3);
+  for(let s=0;s<segs;s++){
+    cx += rand(-0.1,0.1); cy += rand(-0.1,0.1);
+    pts.push({x:cx,y:cy});
+  }
+  lavaCracks.push({pts, phase:Math.random()*Math.PI*2, width:rand(2,4.5)});
+}
 
 /* ============ game state ============ */
 let state = 'menu'; // menu | playing | dead
@@ -388,9 +399,10 @@ function spawnFood(){
   food = [];
   for(let i=0;i<FOOD_COUNT;i++) food.push(makeFood());
 }
+const FOOD_COLORS = ['#ff3b6e','#2de2ff','#3dff7a','#ffe83d','#ff8a3d','#b93dff','#3d5aff','#ff3dcf','#3dffe0','#ffd23d'];
 function makeFood(){
   const p = randomPointInWorld(40);
-  return {x:p.x, y:p.y, r:rand(FOOD_R_MIN,FOOD_R_MAX), color: SKINS[Math.floor(rand(0,SKINS.length))].c1};
+  return {x:p.x, y:p.y, r:rand(FOOD_R_MIN,FOOD_R_MAX), color: FOOD_COLORS[Math.floor(rand(0,FOOD_COLORS.length))]};
 }
 function spawnPowerups(){
   powerups = [];
@@ -635,7 +647,7 @@ function doSplit(e){
       c.mass = half;
       const ang = Math.atan2(e.aim.y, e.aim.x);
       const rr = massToRadius(half);
-      const boost = clamp(1250 - rr*11, 380, 900) * countDamp;
+      const boost = clamp(900 - rr*8, 300, 650) * countDamp;
       newCells.push({x:c.x, y:c.y, vx:0, vy:0, boostVx:Math.cos(ang)*boost, boostVy:Math.sin(ang)*boost, mass:half,
         mergeAt: now+mergeCooldownFor(half), faceAngle:ang, hazardGraceUntil:0});
       c.mergeAt = now+mergeCooldownFor(half);
@@ -800,19 +812,19 @@ function updateEntity(e, dt, now){
       const canMerge = now>a.mergeAt && now>b.mergeAt;
       const nx=(b.x-a.x)/d, ny=(b.y-a.y)/d;
       const gap = ra+rb;
-      if(canMerge && d < Math.max(ra,rb)*0.6){
-        a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
-        e.cells.splice(j,1); j--; continue;
-      }
-      if(d < gap){
+      if(canMerge){
+        if(d < Math.max(ra,rb)*0.6){
+          a.mass += b.mass; a.x=(a.x+b.x)/2; a.y=(a.y+b.y)/2;
+          e.cells.splice(j,1); j--; continue;
+        }
+        const pull = 280*dt;
+        a.boostVx=(a.boostVx||0)+nx*pull; a.boostVy=(a.boostVy||0)+ny*pull;
+        b.boostVx=(b.boostVx||0)-nx*pull; b.boostVy=(b.boostVy||0)-ny*pull;
+      } else if(d < gap){
         const overlap = gap-d;
         const force = overlap*SPRING_K*dt;
         a.boostVx=(a.boostVx||0)-nx*force; a.boostVy=(a.boostVy||0)-ny*force;
         b.boostVx=(b.boostVx||0)+nx*force; b.boostVy=(b.boostVy||0)+ny*force;
-      } else if(canMerge){
-        const pull = 240*dt;
-        a.boostVx=(a.boostVx||0)+nx*pull; a.boostVy=(a.boostVy||0)+ny*pull;
-        b.boostVx=(b.boostVx||0)-nx*pull; b.boostVy=(b.boostVy||0)-ny*pull;
       }
     }
   }
@@ -944,26 +956,24 @@ function handleEating(now, dt){
 
     if(p.kind==='freeze' || p.kind==='spike'){
       let hit=false;
-      if(now >= p.eatableAt){
-        for(const e of entities){
-          if(e===p.owner || !e.alive) continue;
-          for(const cell of e.cells){
-            const r = massToRadius(cell.mass);
-            if(segCircleHit(px0,py0,p.x,p.y,cell.x,cell.y,r+p.r*0.5)){
-              if(p.kind==='freeze'){
-                e.frozenUntil = now+2500;
-                if(p.owner===player) showToast('ЗАМОРОЗИЛ '+e.name.toUpperCase());
-                logEvent('<b>'+p.owner.name+'</b> <span style="color:#8fd8ff">заморозил</span> <b>'+e.name+'</b>');
-              } else if(e.cells.length < MAX_CELLS){
-                shatterCell(e, cell, {x:cell.x,y:cell.y}, now);
-                if(p.owner===player) showToast('ШИП ПОРАЗИЛ '+e.name.toUpperCase());
-                logEvent('<b>'+p.owner.name+'</b> <span style="color:#ff5544">поразил шипом</span> <b>'+e.name+'</b>');
-              }
-              hit=true; break;
+      for(const e of entities){
+        if(e===p.owner || !e.alive) continue;
+        for(const cell of e.cells){
+          const r = massToRadius(cell.mass);
+          if(segCircleHit(px0,py0,p.x,p.y,cell.x,cell.y,r+p.r*0.5)){
+            if(p.kind==='freeze'){
+              e.frozenUntil = now+2500;
+              if(p.owner===player) showToast('ЗАМОРОЗИЛ '+e.name.toUpperCase());
+              logEvent('<b>'+p.owner.name+'</b> <span style="color:#8fd8ff">заморозил</span> <b>'+e.name+'</b>');
+            } else if(e.cells.length < MAX_CELLS){
+              shatterCell(e, cell, {x:cell.x,y:cell.y}, now);
+              if(p.owner===player) showToast('ШИП ПОРАЗИЛ '+e.name.toUpperCase());
+              logEvent('<b>'+p.owner.name+'</b> <span style="color:#ff5544">поразил шипом</span> <b>'+e.name+'</b>');
             }
+            hit=true; break;
           }
-          if(hit) break;
         }
+        if(hit) break;
       }
       const distFromCenter = dist(p.x,p.y,WORLD_CX,WORLD_CY);
       if(hit || distFromCenter > WORLD_R+LAVA_DEPTH || now-p.bornAt>4000){
@@ -1312,14 +1322,21 @@ function drawFacingArrow(p, r, angle){
 let hazardPatternCache = null;
 function getHazardPattern(){
   if(hazardPatternCache) return hazardPatternCache;
+  const S = 40;
   const tile = document.createElement('canvas');
-  tile.width=24; tile.height=24;
+  tile.width=S; tile.height=S;
   const tctx = tile.getContext('2d');
-  tctx.fillStyle='#141414'; tctx.fillRect(0,0,24,24);
-  tctx.fillStyle='#ffcc00';
-  tctx.save(); tctx.translate(12,12); tctx.rotate(Math.PI/4);
-  tctx.fillRect(-24,-6,48,12);
-  tctx.restore();
+  tctx.fillStyle='#ffcf00';
+  tctx.fillRect(0,0,S,S);
+  tctx.strokeStyle='#161616';
+  tctx.lineWidth=S/2;
+  tctx.lineCap='square';
+  for(let off=-S*2; off<=S*3; off+=S){
+    tctx.beginPath();
+    tctx.moveTo(off, S+10);
+    tctx.lineTo(off+S+10, -10);
+    tctx.stroke();
+  }
   hazardPatternCache = ctx.createPattern(tile,'repeat');
   return hazardPatternCache;
 }
@@ -1343,25 +1360,40 @@ function render(now){
   {
     ctx.save();
     const lavaGrad = ctx.createRadialGradient(wc.x,wc.y,edgeRpx*0.82, wc.x,wc.y,edgeRpx*1.7);
-    lavaGrad.addColorStop(0,'#3a0a02'); lavaGrad.addColorStop(0.4,'#7a1d02');
-    lavaGrad.addColorStop(0.72,'#c9430a'); lavaGrad.addColorStop(1,'#1a0300');
+    lavaGrad.addColorStop(0,'#1d1512'); lavaGrad.addColorStop(0.45,'#241a15');
+    lavaGrad.addColorStop(0.8,'#2c1a10'); lavaGrad.addColorStop(1,'#0a0705');
     ctx.fillStyle = lavaGrad;
     ctx.fillRect(0,0,innerWidth,innerHeight);
-    // dark crust + glowing hotspots, laid out across the screen so they're
-    // always visibly dense wherever lava is on screen (not tied to world
-    // position/zoom, which made them scale down to invisible specks before)
+    // dark rock mottling + a few warm ambient glows, screen-space so they're
+    // always visibly dense wherever lava is on screen
     for(const sp of lavaSpots){
       const sx = sp.nx*innerWidth, sy = sp.ny*innerHeight;
       const pulse = 1+Math.sin(now/1300+sp.phase)*0.22;
       const rr = sp.r*pulse;
       if(sp.dark){
         ctx.beginPath(); ctx.arc(sx,sy,rr,0,Math.PI*2);
-        ctx.fillStyle='rgba(15,3,1,.6)'; ctx.fill();
+        ctx.fillStyle='rgba(8,5,4,.55)'; ctx.fill();
       } else {
-        const g2 = ctx.createRadialGradient(sx,sy,0,sx,sy,rr);
-        g2.addColorStop(0,'rgba(255,190,60,.85)'); g2.addColorStop(1,'rgba(255,80,0,0)');
-        ctx.beginPath(); ctx.arc(sx,sy,rr,0,Math.PI*2); ctx.fillStyle=g2; ctx.fill();
+        const g2 = ctx.createRadialGradient(sx,sy,0,sx,sy,rr*0.6);
+        g2.addColorStop(0,'rgba(255,140,40,.35)'); g2.addColorStop(1,'rgba(255,80,0,0)');
+        ctx.beginPath(); ctx.arc(sx,sy,rr*0.6,0,Math.PI*2); ctx.fillStyle=g2; ctx.fill();
       }
+    }
+    // glowing cracks running through the rock, like molten veins
+    for(const cr of lavaCracks){
+      const pulse = 0.65+0.35*Math.sin(now/900+cr.phase);
+      ctx.beginPath();
+      ctx.moveTo(cr.pts[0].x*innerWidth, cr.pts[0].y*innerHeight);
+      for(let k=1;k<cr.pts.length;k++) ctx.lineTo(cr.pts[k].x*innerWidth, cr.pts[k].y*innerHeight);
+      ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.shadowColor='rgba(255,130,20,.9)'; ctx.shadowBlur=16;
+      ctx.strokeStyle=`rgba(255,${120+Math.floor(70*pulse)},30,${0.55+0.35*pulse})`;
+      ctx.lineWidth=cr.width*2.4;
+      ctx.stroke();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle=`rgba(255,235,170,${0.6+0.3*pulse})`;
+      ctx.lineWidth=cr.width*0.7;
+      ctx.stroke();
     }
     // punch the interior back out so lava only shows past the boundary
     // (destination-out reveals whatever was already drawn there — void + stars)
